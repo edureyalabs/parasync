@@ -4,7 +4,7 @@ export default function Home() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="text-center space-y-8 p-8">
-        <h1 className="text-5xl font-bold text-gray-900">Welcome to ParaSync</h1>
+        <h1 className="text-5xl font-bold text-gray-900">Welcome to Parasync</h1>
         <div className="flex flex-col sm:flex-row gap-4 justify-center mt-12">
           <a
             href="/auth"
