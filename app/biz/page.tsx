@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Sidebar from './components/Sidebar';
+import Account from './components/Account';
 
 export default function Page() {
-  const [activeSection, setActiveSection] = useState<'projects' | 'assets'>('projects');
+  const [activeSection, setActiveSection] = useState<'projects' | 'assets' | 'account'>('projects');
   const [userEmail, setUserEmail] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -44,6 +45,28 @@ export default function Page() {
     );
   }
 
+  // Render content based on active section
+  const renderContent = () => {
+    switch (activeSection) {
+      case 'projects':
+        return (
+          <div className="flex items-center justify-center h-full">
+            <h1 className="text-4xl font-bold text-gray-800">Projects</h1>
+          </div>
+        );
+      case 'assets':
+        return (
+          <div className="flex items-center justify-center h-full">
+            <h1 className="text-4xl font-bold text-gray-800">Assets</h1>
+          </div>
+        );
+      case 'account':
+        return <Account userEmail={userEmail} onLogout={handleLogout} />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="flex h-screen">
       <Sidebar 
@@ -54,9 +77,7 @@ export default function Page() {
       />
       
       <main className="flex-1 bg-gray-100 p-8 overflow-auto">
-        <div className="flex items-center justify-center h-full">
-          <h1 className="text-4xl font-bold text-gray-800">Right Dashboard</h1>
-        </div>
+        {renderContent()}
       </main>
     </div>
   );
