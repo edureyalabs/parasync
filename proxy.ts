@@ -9,8 +9,8 @@ export function proxy(request: NextRequest) {
   const subdomain = hostname.split('.')[0]
   
   // Route based on subdomain
-  if (subdomain === 'app' && !url.pathname.startsWith('/app')) {
-    url.pathname = `/app${url.pathname}`
+  if (subdomain === 'app' && !url.pathname.startsWith('/consumer')) {
+    url.pathname = `/consumer${url.pathname}`
     return NextResponse.rewrite(url)
   }
   

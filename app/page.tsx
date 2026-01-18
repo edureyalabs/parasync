@@ -32,7 +32,7 @@ export default function Home() {
         </a>
         
         <a
-          href={`${getSubdomainUrl('app')}/auth`}
+          href={`${getSubdomainUrl('consumer')}/auth`}
           className="px-8 py-4 bg-gray-800 text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors"
         >
           Login/Signup
