@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Parasync",
-  description: "Agentic Commerce Platform",
+  title: "Parasync - Agentic Commerce Platform",
+  description: "Agentic Orchestration Platform for Modern Businesses",
 };
 
 export default function RootLayout({
