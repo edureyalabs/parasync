@@ -9,6 +9,7 @@ import Account from './components/Account';
 export default function Page() {
   const [activeSection, setActiveSection] = useState<'projects' | 'assets' | 'account'>('projects');
   const [userEmail, setUserEmail] = useState<string>('');
+  const [userId, setUserId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const supabase = createClient();
@@ -25,6 +26,7 @@ export default function Page() {
       }
       
       setUserEmail(user.email || 'No email');
+      setUserId(user.id);
       setLoading(false);
     }
 
@@ -61,7 +63,7 @@ export default function Page() {
           </div>
         );
       case 'account':
-        return <Account userEmail={userEmail} onLogout={handleLogout} />;
+        return <Account userEmail={userEmail} userId={userId} onLogout={handleLogout} />;
       default:
         return null;
     }

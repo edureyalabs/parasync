@@ -83,6 +83,17 @@ export default function Sidebar({
         </ul>
       </nav>
 
+      {/* Logout */}
+      <div className="p-3 border-t border-gray-700 w-full">
+        <button
+          onClick={onLogout}
+          className="w-full flex flex-col items-center justify-center px-2 py-3 rounded-lg hover:bg-gray-800 transition-colors"
+          title="Logout"
+        >
+          <LogOut size={24} />
+        </button>
+      </div>
+
       
     </aside>
   );
