@@ -1,18 +1,78 @@
 // app/biz/components/agents/AgentCard.tsx
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Bot, Trash2, Loader2, AlertCircle } from 'lucide-react';
+import { Bot, Trash2, Loader2, AlertCircle, Edit2, Upload } from 'lucide-react';
 import { Agent } from '../Agents';
+import EditAgentFieldModal from './EditAgentFieldModal';
 
 interface AgentCardProps {
   agent: Agent;
+  userId: string;
   onDelete: (agentId: string) => void;
+  onUpdate: (updatedAgent: Agent) => void;
 }
 
-export default function AgentCard({ agent, onDelete }: AgentCardProps) {
+type EditField = 'display_name' | 'role' | 'goal' | 'backstory' | null;
+
+export default function AgentCard({ agent, userId, onDelete, onUpdate }: AgentCardProps) {
   const supabase = createClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [editingField, setEditingField] = useState<EditField>(null);
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('userId', userId);
+      formData.append('agentId', agent.id);
+
+      const response = await fetch('/biz/api/agents/upload-avatar', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to upload avatar');
+      }
+
+      onUpdate({ ...agent, avatar_url: data.url });
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      alert(error.message || 'Failed to upload avatar');
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleSaveField = async (field: string, value: string) => {
+    const { data, error } = await supabase
+      .from('agents')
+      .update({ [field]: value })
+      .eq('id', agent.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    
+    onUpdate(data);
+  };
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -33,45 +93,122 @@ export default function AgentCard({ agent, onDelete }: AgentCardProps) {
     }
   };
 
+  const truncateText = (text: string, maxLength: number) => {
+    if (text.length <= maxLength) return text;
+    return text.slice(0, maxLength) + '...';
+  };
+
   return (
     <>
       <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden">
         {/* Avatar Section */}
         <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-6 text-white">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center overflow-hidden">
-              {agent.avatar_url ? (
-                <img
-                  src={agent.avatar_url}
-                  alt={agent.display_name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <Bot size={32} className="text-white" />
-              )}
+          <div className="flex items-start gap-4">
+            <div className="relative">
+              <div 
+                onClick={handleAvatarClick}
+                className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center overflow-hidden cursor-pointer group"
+              >
+                {uploadingAvatar ? (
+                  <Loader2 className="animate-spin text-white" size={32} />
+                ) : agent.avatar_url ? (
+                  <>
+                    <img
+                      src={agent.avatar_url}
+                      alt={agent.display_name}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Upload size={24} className="text-white" />
+                    </div>
+                  </>
+                ) : (
+                  <div className="relative">
+                    <Bot size={36} className="text-white" />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Upload size={20} className="text-white" />
+                    </div>
+                  </div>
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                onChange={handleAvatarUpload}
+                className="hidden"
+              />
             </div>
-            <div className="flex-1">
-              <h3 className="font-bold text-lg">{agent.display_name}</h3>
-              <p className="text-sm text-white/80">@{agent.username}</p>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-lg truncate">{agent.display_name}</h3>
+                  <p className="text-sm text-white/80 truncate">@{agent.username}</p>
+                </div>
+                <button
+                  onClick={() => setEditingField('display_name')}
+                  className="text-white/80 hover:text-white p-1 flex-shrink-0"
+                  title="Edit display name"
+                >
+                  <Edit2 size={16} />
+                </button>
+              </div>
+              <p className="text-xs text-white/60 mt-1">Click avatar to upload</p>
             </div>
           </div>
         </div>
 
         {/* Content Section */}
         <div className="p-6 space-y-4">
+          {/* Role */}
           <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase">Role</label>
-            <p className="text-gray-800 mt-1">{agent.role}</p>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-semibold text-gray-500 uppercase">Role</label>
+              <button
+                onClick={() => setEditingField('role')}
+                className="text-blue-600 hover:text-blue-700 p-1"
+                title="Edit role"
+              >
+                <Edit2 size={14} />
+              </button>
+            </div>
+            <p className="text-gray-800 text-sm">
+              {truncateText(agent.role, 100)}
+            </p>
           </div>
 
+          {/* Goal */}
           <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase">Goal</label>
-            <p className="text-gray-800 mt-1 text-sm">{agent.goal}</p>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-semibold text-gray-500 uppercase">Goal</label>
+              <button
+                onClick={() => setEditingField('goal')}
+                className="text-blue-600 hover:text-blue-700 p-1"
+                title="Edit goal"
+              >
+                <Edit2 size={14} />
+              </button>
+            </div>
+            <p className="text-gray-700 text-sm line-clamp-2">
+              {agent.goal}
+            </p>
           </div>
 
+          {/* Backstory */}
           <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase">Backstory</label>
-            <p className="text-gray-600 mt-1 text-sm line-clamp-3">{agent.backstory}</p>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-semibold text-gray-500 uppercase">Backstory</label>
+              <button
+                onClick={() => setEditingField('backstory')}
+                className="text-blue-600 hover:text-blue-700 p-1"
+                title="Edit backstory"
+              >
+                <Edit2 size={14} />
+              </button>
+            </div>
+            <p className="text-gray-600 text-sm line-clamp-3">
+              {agent.backstory}
+            </p>
           </div>
 
           {/* Action Buttons */}
@@ -91,6 +228,16 @@ export default function AgentCard({ agent, onDelete }: AgentCardProps) {
           </div>
         </div>
       </div>
+
+      {/* Edit Field Modal */}
+      {editingField && (
+        <EditAgentFieldModal
+          field={editingField}
+          currentValue={agent[editingField]}
+          onClose={() => setEditingField(null)}
+          onSave={handleSaveField}
+        />
+      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (

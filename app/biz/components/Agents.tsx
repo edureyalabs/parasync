@@ -57,6 +57,12 @@ export default function Agents({ userId }: AgentsProps) {
     setAgents(agents.filter(agent => agent.id !== agentId));
   };
 
+  const handleAgentUpdated = (updatedAgent: Agent) => {
+    setAgents(agents.map(agent => 
+      agent.id === updatedAgent.id ? updatedAgent : agent
+    ));
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -115,7 +121,9 @@ export default function Agents({ userId }: AgentsProps) {
             <AgentCard
               key={agent.id}
               agent={agent}
+              userId={userId}
               onDelete={handleAgentDeleted}
+              onUpdate={handleAgentUpdated}
             />
           ))}
         </div>

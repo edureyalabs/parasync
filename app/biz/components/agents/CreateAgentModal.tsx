@@ -1,7 +1,7 @@
 // app/biz/components/agents/CreateAgentModal.tsx
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { X, Loader2, Check, AlertCircle, Sparkles } from 'lucide-react';
+import { X, Loader2, Check, AlertCircle, Info } from 'lucide-react';
 import { Agent } from '../Agents';
 
 interface CreateAgentModalProps {
@@ -10,38 +10,10 @@ interface CreateAgentModalProps {
   onAgentCreated: (agent: Agent) => void;
 }
 
-interface AgentTemplate {
-  role: string;
-  goal: string;
-  backstory: string;
-}
-
-const AGENT_TEMPLATES: Record<string, AgentTemplate> = {
-  'customer-support': {
-    role: 'Customer Support Specialist',
-    goal: 'Provide exceptional customer service and resolve customer inquiries efficiently',
-    backstory: 'An experienced customer support professional with a passion for helping people solve problems. Known for patience, empathy, and clear communication.',
-  },
-  'sales-assistant': {
-    role: 'Sales Assistant',
-    goal: 'Drive sales growth by identifying opportunities and building strong customer relationships',
-    backstory: 'A results-driven sales professional with expertise in understanding customer needs and presenting tailored solutions that deliver value.',
-  },
-  'content-writer': {
-    role: 'Content Writer',
-    goal: 'Create engaging, high-quality content that resonates with target audiences',
-    backstory: 'A creative writer with a talent for crafting compelling narratives and informative articles across various industries and formats.',
-  },
-  'data-analyst': {
-    role: 'Data Analyst',
-    goal: 'Extract insights from data to inform strategic business decisions',
-    backstory: 'An analytical thinker with expertise in data analysis, visualization, and translating complex data into actionable insights.',
-  },
-  'project-manager': {
-    role: 'Project Manager',
-    goal: 'Coordinate projects efficiently and ensure timely delivery of objectives',
-    backstory: 'An organized leader skilled in managing teams, resources, and timelines to deliver successful projects within scope and budget.',
-  },
+const DEFAULT_AGENT = {
+  role: 'AI Assistant',
+  goal: 'Help users accomplish their tasks efficiently and effectively',
+  backstory: 'A versatile AI agent designed to assist with various tasks while maintaining professionalism and helpfulness.',
 };
 
 export default function CreateAgentModal({ userId, onClose, onAgentCreated }: CreateAgentModalProps) {
@@ -49,7 +21,6 @@ export default function CreateAgentModal({ userId, onClose, onAgentCreated }: Cr
   const [step, setStep] = useState<'name' | 'username' | 'creating'>('name');
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState('customer-support');
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'unavailable'>('idle');
   const [usernameError, setUsernameError] = useState('');
   const [creating, setCreating] = useState(false);
@@ -132,17 +103,15 @@ export default function CreateAgentModal({ userId, onClose, onAgentCreated }: Cr
     setError('');
 
     try {
-      const template = AGENT_TEMPLATES[selectedTemplate];
-      
       const { data, error } = await supabase
         .from('agents')
         .insert({
           profile_id: userId,
           username,
           display_name: displayName,
-          role: template.role,
-          goal: template.goal,
-          backstory: template.backstory,
+          role: DEFAULT_AGENT.role,
+          goal: DEFAULT_AGENT.goal,
+          backstory: DEFAULT_AGENT.backstory,
         })
         .select()
         .single();
@@ -185,14 +154,14 @@ export default function CreateAgentModal({ userId, onClose, onAgentCreated }: Cr
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Display Name *
+                  Agent Display Name *
                 </label>
                 <input
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  placeholder="e.g., Alex Customer Support"
+                  placeholder="e.g., My Assistant"
                   maxLength={50}
                   autoFocus
                 />
@@ -201,34 +170,16 @@ export default function CreateAgentModal({ userId, onClose, onAgentCreated }: Cr
                 </p>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  Agent Template
-                </label>
-                <div className="space-y-2">
-                  {Object.entries(AGENT_TEMPLATES).map(([key, template]) => (
-                    <label
-                      key={key}
-                      className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        selectedTemplate === key
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="template"
-                        value={key}
-                        checked={selectedTemplate === key}
-                        onChange={(e) => setSelectedTemplate(e.target.value)}
-                        className="mt-1"
-                      />
-                      <div className="flex-1">
-                        <div className="font-semibold text-gray-900">{template.role}</div>
-                        <div className="text-sm text-gray-600 mt-1">{template.goal}</div>
-                      </div>
-                    </label>
-                  ))}
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <Info className="text-blue-600 mt-0.5 flex-shrink-0" size={20} />
+                  <div className="text-sm text-blue-800">
+                    <p className="font-semibold mb-2">Default Agent Configuration</p>
+                    <p className="mb-1"><strong>Role:</strong> {DEFAULT_AGENT.role}</p>
+                    <p className="mb-1"><strong>Goal:</strong> {DEFAULT_AGENT.goal}</p>
+                    <p><strong>Backstory:</strong> {DEFAULT_AGENT.backstory}</p>
+                    <p className="mt-2 text-xs">You can customize these after creation</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -236,17 +187,12 @@ export default function CreateAgentModal({ userId, onClose, onAgentCreated }: Cr
 
           {step === 'username' && (
             <div className="space-y-6">
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
                 <div className="flex items-start gap-3">
-                  <Sparkles className="text-blue-600 mt-0.5" size={20} />
-                  <div>
-                    <p className="font-semibold text-blue-900 mb-1">Agent Preview</p>
-                    <p className="text-sm text-blue-800">
-                      <strong>Name:</strong> {displayName}
-                    </p>
-                    <p className="text-sm text-blue-800">
-                      <strong>Role:</strong> {AGENT_TEMPLATES[selectedTemplate].role}
-                    </p>
+                  <AlertCircle className="text-amber-600 mt-0.5 flex-shrink-0" size={20} />
+                  <div className="text-sm text-amber-800">
+                    <p className="font-semibold">Important: Username cannot be changed</p>
+                    <p className="mt-1">Choose carefully - your username will be permanent once created.</p>
                   </div>
                 </div>
               </div>
@@ -307,7 +253,7 @@ export default function CreateAgentModal({ userId, onClose, onAgentCreated }: Cr
               </button>
             )}
             <button
-              onClick={step === 'name' ? handleNext : handleCreateAgent}
+              onClick={handleNext}
               disabled={
                 (step === 'name' && !displayName.trim()) ||
                 (step === 'username' && usernameStatus !== 'available')
