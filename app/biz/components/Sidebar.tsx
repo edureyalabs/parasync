@@ -1,10 +1,10 @@
 import Image from 'next/image';
-import { LogOut, FolderKanban, Package, User } from 'lucide-react';
+import { LogOut, FolderKanban, Bot, Wrench, User } from 'lucide-react';
 import logoImage from './logo.jpg';
 
 interface SidebarProps {
-  activeSection: 'projects' | 'assets' | 'account';
-  onSectionChange: (section: 'projects' | 'assets' | 'account') => void;
+  activeSection: 'projects' | 'agents' | 'tools' | 'account';
+  onSectionChange: (section: 'projects' | 'agents' | 'tools' | 'account') => void;
   userEmail: string;
   onLogout: () => void;
 }
@@ -54,16 +54,30 @@ export default function Sidebar({
           </li>
           <li>
             <button 
-              onClick={() => onSectionChange('assets')}
+              onClick={() => onSectionChange('agents')}
               className={`w-full flex flex-col items-center justify-center px-2 py-3 rounded-lg transition-colors ${
-                activeSection === 'assets' 
+                activeSection === 'agents' 
                   ? 'bg-blue-600 text-white' 
                   : 'hover:bg-gray-800'
               }`}
-              title="Assets"
+              title="Agents"
             >
-              <Package size={24} />
-              <span className="text-xs mt-1">Assets</span>
+              <Bot size={24} />
+              <span className="text-xs mt-1">Agents</span>
+            </button>
+          </li>
+          <li>
+            <button 
+              onClick={() => onSectionChange('tools')}
+              className={`w-full flex flex-col items-center justify-center px-2 py-3 rounded-lg transition-colors ${
+                activeSection === 'tools' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'hover:bg-gray-800'
+              }`}
+              title="Tools"
+            >
+              <Wrench size={24} />
+              <span className="text-xs mt-1">Tools</span>
             </button>
           </li>
           <li>

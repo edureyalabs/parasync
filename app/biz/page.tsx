@@ -7,7 +7,7 @@ import Sidebar from './components/Sidebar';
 import Account from './components/Account';
 
 export default function Page() {
-  const [activeSection, setActiveSection] = useState<'projects' | 'assets' | 'account'>('projects');
+  const [activeSection, setActiveSection] = useState<'projects' | 'agents' | 'tools' | 'account'>('projects');
   const [userEmail, setUserEmail] = useState<string>('');
   const [userId, setUserId] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -56,10 +56,16 @@ export default function Page() {
             <h1 className="text-4xl font-bold text-gray-800">Projects</h1>
           </div>
         );
-      case 'assets':
+      case 'agents':
         return (
           <div className="flex items-center justify-center h-full">
-            <h1 className="text-4xl font-bold text-gray-800">Assets</h1>
+            <h1 className="text-4xl font-bold text-gray-800">Agents</h1>
+          </div>
+        );
+      case 'tools':
+        return (
+          <div className="flex items-center justify-center h-full">
+            <h1 className="text-4xl font-bold text-gray-800">Tools</h1>
           </div>
         );
       case 'account':
