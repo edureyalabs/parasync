@@ -1,10 +1,10 @@
 import Image from 'next/image';
-import { LogOut, LayoutDashboard, Bot, Wrench, User } from 'lucide-react';
+import { LogOut, LayoutDashboard, Bot, Wrench, User, MessageSquare } from 'lucide-react';
 import logoImage from './logo.jpg';
 
 interface SidebarProps {
-  activeSection: 'dashboard' | 'agents' | 'tools' | 'account';
-  onSectionChange: (section: 'dashboard' | 'agents' | 'tools' | 'account') => void;
+  activeSection: 'dashboard' | 'chats' | 'agents' | 'tools' | 'account';
+  onSectionChange: (section: 'dashboard' | 'chats' | 'agents' | 'tools' | 'account') => void;
   userEmail: string;
   onLogout: () => void;
 }
@@ -50,6 +50,20 @@ export default function Sidebar({
             >
               <LayoutDashboard size={20} />
               <span className="text-[10px] mt-1">Dashboard</span>
+            </button>
+          </li>
+          <li>
+            <button 
+              onClick={() => onSectionChange('chats')}
+              className={`w-full flex flex-col items-center justify-center px-2 py-3 rounded-lg transition-colors ${
+                activeSection === 'chats' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'hover:bg-gray-800'
+              }`}
+              title="Chats"
+            >
+              <MessageSquare size={24} />
+              <span className="text-xs mt-1">Chats</span>
             </button>
           </li>
           <li>

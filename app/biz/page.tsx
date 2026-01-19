@@ -6,9 +6,10 @@ import { createClient } from '@/lib/supabase/client';
 import Sidebar from './components/Sidebar';
 import Account from './components/Account';
 import Agents from './components/Agents';
+import Chats from './components/Chats';
 
 export default function Page() {
-  const [activeSection, setActiveSection] = useState<'dashboard' | 'agents' | 'tools' | 'account'>('dashboard');
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'chats' | 'agents' | 'tools' | 'account'>('dashboard');
   const [userEmail, setUserEmail] = useState<string>('');
   const [userId, setUserId] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -57,6 +58,8 @@ export default function Page() {
             <h1 className="text-4xl font-bold text-gray-800">Dashboard</h1>
           </div>
         );
+      case 'chats':
+        return <Chats userId={userId} />;
       case 'agents':
         return <Agents userId={userId} />;
       case 'tools':
