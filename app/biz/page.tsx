@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Sidebar from './components/Sidebar';
 import Account from './components/Account';
+import Agents from './components/Agents';
 
 export default function Page() {
-  const [activeSection, setActiveSection] = useState<'projects' | 'agents' | 'tools' | 'account'>('projects');
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'agents' | 'tools' | 'account'>('dashboard');
   const [userEmail, setUserEmail] = useState<string>('');
   const [userId, setUserId] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -50,18 +51,14 @@ export default function Page() {
   // Render content based on active section
   const renderContent = () => {
     switch (activeSection) {
-      case 'projects':
+      case 'dashboard':
         return (
           <div className="flex items-center justify-center h-full">
-            <h1 className="text-4xl font-bold text-gray-800">Projects</h1>
+            <h1 className="text-4xl font-bold text-gray-800">Dashboard</h1>
           </div>
         );
       case 'agents':
-        return (
-          <div className="flex items-center justify-center h-full">
-            <h1 className="text-4xl font-bold text-gray-800">Agents</h1>
-          </div>
-        );
+        return <Agents userId={userId} />;
       case 'tools':
         return (
           <div className="flex items-center justify-center h-full">

@@ -1,10 +1,10 @@
 import Image from 'next/image';
-import { LogOut, FolderKanban, Bot, Wrench, User } from 'lucide-react';
+import { LogOut, LayoutDashboard, Bot, Wrench, User } from 'lucide-react';
 import logoImage from './logo.jpg';
 
 interface SidebarProps {
-  activeSection: 'projects' | 'agents' | 'tools' | 'account';
-  onSectionChange: (section: 'projects' | 'agents' | 'tools' | 'account') => void;
+  activeSection: 'dashboard' | 'agents' | 'tools' | 'account';
+  onSectionChange: (section: 'dashboard' | 'agents' | 'tools' | 'account') => void;
   userEmail: string;
   onLogout: () => void;
 }
@@ -40,16 +40,16 @@ export default function Sidebar({
         <ul className="space-y-3">
           <li>
             <button 
-              onClick={() => onSectionChange('projects')}
+              onClick={() => onSectionChange('dashboard')}
               className={`w-full flex flex-col items-center justify-center px-2 py-3 rounded-lg transition-colors ${
-                activeSection === 'projects' 
+                activeSection === 'dashboard' 
                   ? 'bg-blue-600 text-white' 
                   : 'hover:bg-gray-800'
               }`}
-              title="Projects"
+              title="Dashboard"
             >
-              <FolderKanban size={24} />
-              <span className="text-xs mt-1">Projects</span>
+              <LayoutDashboard size={20} />
+              <span className="text-[10px] mt-1">Dashboard</span>
             </button>
           </li>
           <li>
