@@ -14,12 +14,10 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user is authenticated
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        // Redirect to auth if not logged in
         router.push('/auth');
       } else {
         setUserEmail(session.user.email || '');
@@ -29,7 +27,6 @@ export default function Home() {
 
     checkUser();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         router.push('/auth');
@@ -59,7 +56,6 @@ export default function Home() {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
       <Sidebar
         activeSection={activeSection}
         onSectionChange={setActiveSection}
@@ -67,7 +63,6 @@ export default function Home() {
         onLogout={handleLogout}
       />
 
-      {/* Main Content Area */}
       <main className="flex-1 overflow-hidden">
         {activeSection === 'chats' && <MyChats />}
         {activeSection === 'agents' && <AgentDiscovery />}

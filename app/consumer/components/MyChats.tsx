@@ -2,9 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { sendChatMessage, createTask, listTasks, Task } from '@/lib/api';
 import { User, Send, Loader } from 'lucide-react';
-import TaskDropdown from './TaskDropdown';
 import MessageBubble from './MessageBubble';
 
 interface NetworkAgent {
@@ -23,8 +21,9 @@ interface Message {
   message_text: string;
   sender_type: 'user' | 'agent';
   created_at: string;
-  task_id?: string;
-  task_status?: string;
+  status?: string;
+  error_message?: string;
+  metadata?: any;
 }
 
 export default function MyChats() {
@@ -34,9 +33,6 @@ export default function MyChats() {
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [showTaskDropdown, setShowTaskDropdown] = useState(false);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [userId, setUserId] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -49,8 +45,8 @@ export default function MyChats() {
   useEffect(() => {
     if (selectedAgent && userId) {
       fetchMessages();
-      subscribeToMessages();
-      subscribeToTasks();
+      const unsubscribe = subscribeToMessages();
+      return unsubscribe;
     }
   }, [selectedAgent, userId]);
 
@@ -102,20 +98,21 @@ export default function MyChats() {
     try {
       const { data: messagesData, error: messagesError } = await supabase
         .from('chat_messages')
-        .select('*, tasks(status)')
+        .select('*')
         .eq('user_id', userId)
         .eq('agent_id', selectedAgent.agent_id)
         .order('created_at', { ascending: true });
 
       if (messagesError) throw messagesError;
 
-      const formattedMessages = messagesData.map((msg: any) => ({
+      const formattedMessages: Message[] = messagesData.map((msg: any) => ({
         id: msg.id,
         message_text: msg.message_text,
         sender_type: msg.sender_type,
         created_at: msg.created_at,
-        task_id: msg.task_id,
-        task_status: msg.tasks?.status
+        status: msg.status,
+        error_message: msg.error_message,
+        metadata: msg.metadata
       }));
 
       setMessages(formattedMessages);
@@ -125,7 +122,7 @@ export default function MyChats() {
   };
 
   const subscribeToMessages = () => {
-    if (!selectedAgent || !userId) return;
+    if (!selectedAgent || !userId) return () => {};
 
     const channel = supabase
       .channel(`messages:${userId}:${selectedAgent.agent_id}`)
@@ -137,58 +134,42 @@ export default function MyChats() {
           table: 'chat_messages',
           filter: `user_id=eq.${userId},agent_id=eq.${selectedAgent.agent_id}`
         },
-        async (payload) => {
+        (payload) => {
           console.log('New message received:', payload);
           
-          let taskStatus = null;
-          if (payload.new.task_id) {
-            const { data: taskData } = await supabase
-              .from('tasks')
-              .select('status')
-              .eq('id', payload.new.task_id)
-              .single();
-            taskStatus = taskData?.status;
-          }
-
-          const newMessage = {
+          const newMessage: Message = {
             id: payload.new.id,
             message_text: payload.new.message_text,
             sender_type: payload.new.sender_type,
             created_at: payload.new.created_at,
-            task_id: payload.new.task_id,
-            task_status: taskStatus
+            status: payload.new.status,
+            error_message: payload.new.error_message,
+            metadata: payload.new.metadata
           };
 
           setMessages((prev) => [...prev, newMessage]);
         }
       )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
-
-  const subscribeToTasks = () => {
-    if (!selectedAgent || !userId) return;
-
-    const channel = supabase
-      .channel(`tasks:${userId}:${selectedAgent.agent_id}`)
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'tasks',
+          table: 'chat_messages',
           filter: `user_id=eq.${userId},agent_id=eq.${selectedAgent.agent_id}`
         },
         (payload) => {
-          console.log('Task updated:', payload);
+          console.log('Message updated:', payload);
           
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.task_id === payload.new.id
-                ? { ...msg, task_status: payload.new.status }
+              msg.id === payload.new.id
+                ? {
+                    ...msg,
+                    status: payload.new.status,
+                    error_message: payload.new.error_message,
+                    metadata: payload.new.metadata
+                  }
                 : msg
             )
           );
@@ -201,66 +182,30 @@ export default function MyChats() {
     };
   };
 
-  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setInputMessage(value);
-
-    if (value.endsWith('#') && selectedAgent) {
-      try {
-        const response = await listTasks({
-          user_id: userId,
-          agent_id: selectedAgent.agent_id,
-          limit: 10
-        });
-        
-        setTasks(response.tasks);
-        
-        const inputRect = inputRef.current?.getBoundingClientRect();
-        if (inputRect) {
-          setDropdownPosition({
-            top: inputRect.top - 320,
-            left: inputRect.left
-          });
-        }
-        
-        setShowTaskDropdown(true);
-      } catch (error) {
-        console.error('Error fetching tasks:', error);
-      }
-    } else {
-      setShowTaskDropdown(false);
-    }
-  };
-
-  const handleTaskSelect = (task: Task) => {
-    const messageWithoutHash = inputMessage.slice(0, -1);
-    setInputMessage(`${messageWithoutHash}[Task: ${task.title}]`);
-    setShowTaskDropdown(false);
-  };
-
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !selectedAgent || !userId || sending) return;
-
-    const isTaskCreation = inputMessage.trim().startsWith('/create');
 
     try {
       setSending(true);
 
-      if (isTaskCreation) {
-        await createTask({
+      // Insert user message directly to Supabase with pending status
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .insert({
           user_id: userId,
           agent_id: selectedAgent.agent_id,
-          message: inputMessage
-        });
-      } else {
-        await sendChatMessage({
-          user_id: userId,
-          agent_id: selectedAgent.agent_id,
-          message: inputMessage
-        });
-      }
+          message_text: inputMessage,
+          sender_type: 'user',
+          status: 'pending'  // Trigger will process this
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
 
       setInputMessage('');
+      
+      // Message will appear via real-time subscription
     } catch (error: any) {
       console.error('Error sending message:', error);
       alert(error.message || 'Failed to send message');
@@ -290,6 +235,7 @@ export default function MyChats() {
 
   return (
     <div className="flex h-full">
+      {/* Agent List Sidebar */}
       <div className="w-80 border-r border-gray-200 bg-white flex flex-col">
         <div className="p-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">Chats</h2>
@@ -332,9 +278,11 @@ export default function MyChats() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col bg-gray-50 relative">
+      {/* Chat Area */}
+      <div className="flex-1 flex flex-col bg-gray-50">
         {selectedAgent ? (
           <>
+            {/* Chat Header */}
             <div className="bg-white border-b border-gray-200 p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white">
                 {selectedAgent.avatar_url ? (
@@ -357,6 +305,7 @@ export default function MyChats() {
               </div>
             </div>
 
+            {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {messages.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
@@ -378,9 +327,6 @@ export default function MyChats() {
                     <p className="text-sm text-gray-500 mb-4">
                       {selectedAgent.goal || 'Start a conversation'}
                     </p>
-                    <p className="text-xs text-gray-400">
-                      Type /create to assign a task
-                    </p>
                   </div>
                 </div>
               ) : (
@@ -393,15 +339,16 @@ export default function MyChats() {
               )}
             </div>
 
+            {/* Input Area */}
             <div className="bg-white border-t border-gray-200 p-4">
               <div className="flex gap-2">
                 <input
                   ref={inputRef}
                   type="text"
                   value={inputMessage}
-                  onChange={handleInputChange}
+                  onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder={`Message ${selectedAgent.display_name}... (type /create for tasks, # for task list)`}
+                  placeholder={`Message ${selectedAgent.display_name}...`}
                   disabled={sending}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
                 />
@@ -419,14 +366,6 @@ export default function MyChats() {
           <div className="flex items-center justify-center h-full">
             <p className="text-gray-500">Select a chat to start messaging</p>
           </div>
-        )}
-
-        {showTaskDropdown && (
-          <TaskDropdown
-            tasks={tasks}
-            onSelectTask={handleTaskSelect}
-            position={dropdownPosition}
-          />
         )}
       </div>
     </div>
