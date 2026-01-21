@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Sidebar from './components/Sidebar';
+import MyChats from './components/MyChats';
+import AgentDiscovery from './components/AgentDiscovery';
 
 export default function Home() {
-  const [activeSection, setActiveSection] = useState<'chats' | 'agents'>('chats');
+  const [activeSection, setActiveSection] = useState<'chats' | 'agents' | 'account'>('chats');
   const [userEmail, setUserEmail] = useState('');
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -66,27 +68,14 @@ export default function Home() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-auto">
-        {activeSection === 'chats' && (
-          <div className="h-full p-8">
-            <div className="max-w-7xl mx-auto">
-              <h1 className="text-3xl font-bold text-gray-900 mb-6">Chats</h1>
-              <div className="bg-white rounded-lg shadow p-6">
-                <p className="text-gray-600">Your chat conversations will appear here.</p>
-                {/* Add your chats content here */}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeSection === 'agents' && (
-          <div className="h-full p-8">
-            <div className="max-w-7xl mx-auto">
-              <h1 className="text-3xl font-bold text-gray-900 mb-6">Agents</h1>
-              <div className="bg-white rounded-lg shadow p-6">
-                <p className="text-gray-600">Your AI agents will appear here.</p>
-                {/* Add your agents content here */}
-              </div>
+      <main className="flex-1 overflow-hidden">
+        {activeSection === 'chats' && <MyChats />}
+        {activeSection === 'agents' && <AgentDiscovery />}
+        {activeSection === 'account' && (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Account Settings</h2>
+              <p className="text-gray-600">This section will be built later</p>
             </div>
           </div>
         )}

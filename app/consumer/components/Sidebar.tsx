@@ -1,10 +1,10 @@
 import Image from 'next/image';
-import { LogOut, MessageSquare, Bot } from 'lucide-react';
+import { LogOut, MessageSquare, Compass, UserCircle } from 'lucide-react';
 import logoImage from './logo.jpg';
 
 interface SidebarProps {
-  activeSection: 'chats' | 'agents';
-  onSectionChange: (section: 'chats' | 'agents') => void;
+  activeSection: 'chats' | 'agents' | 'account';
+  onSectionChange: (section: 'chats' | 'agents' | 'account') => void;
   userEmail: string;
   onLogout: () => void;
 }
@@ -55,10 +55,24 @@ export default function Sidebar({
                   ? 'bg-blue-600 text-white' 
                   : 'hover:bg-gray-800'
               }`}
-              title="Agents"
+              title="Discover Agents"
             >
-              <Bot size={24} />
+              <Compass size={24} />
               <span className="text-xs mt-1">Agents</span>
+            </button>
+          </li>
+          <li>
+            <button 
+              onClick={() => onSectionChange('account')}
+              className={`w-full flex flex-col items-center justify-center px-2 py-3 rounded-lg transition-colors ${
+                activeSection === 'account' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'hover:bg-gray-800'
+              }`}
+              title="Account"
+            >
+              <UserCircle size={24} />
+              <span className="text-xs mt-1">Account</span>
             </button>
           </li>
         </ul>
