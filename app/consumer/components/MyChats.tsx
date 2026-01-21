@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { User, Send } from 'lucide-react';
+import { sendChatMessage, createTask, listTasks, Task } from '@/lib/api';
+import { User, Send, Loader } from 'lucide-react';
+import TaskDropdown from './TaskDropdown';
+import MessageBubble from './MessageBubble';
 
 interface NetworkAgent {
   network_id: string;
@@ -17,9 +20,11 @@ interface NetworkAgent {
 
 interface Message {
   id: string;
-  text: string;
-  sender: 'user' | 'agent';
-  timestamp: Date;
+  message_text: string;
+  sender_type: 'user' | 'agent';
+  created_at: string;
+  task_id?: string;
+  task_status?: string;
 }
 
 export default function MyChats() {
@@ -28,10 +33,41 @@ export default function MyChats() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [showTaskDropdown, setShowTaskDropdown] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const [userId, setUserId] = useState<string>('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    initializeUser();
     fetchMyNetwork();
   }, []);
+
+  useEffect(() => {
+    if (selectedAgent && userId) {
+      fetchMessages();
+      subscribeToMessages();
+      subscribeToTasks();
+    }
+  }, [selectedAgent, userId]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const initializeUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      setUserId(user.id);
+    }
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const fetchMyNetwork = async () => {
     try {
@@ -50,7 +86,6 @@ export default function MyChats() {
 
       setNetworkAgents(data || []);
       
-      // Auto-select first agent if available
       if (data && data.length > 0 && !selectedAgent) {
         setSelectedAgent(data[0]);
       }
@@ -61,30 +96,177 @@ export default function MyChats() {
     }
   };
 
-  const handleSendMessage = () => {
-    if (!inputMessage.trim() || !selectedAgent) return;
+  const fetchMessages = async () => {
+    if (!selectedAgent || !userId) return;
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text: inputMessage,
-      sender: 'user',
-      timestamp: new Date()
+    try {
+      const { data: messagesData, error: messagesError } = await supabase
+        .from('chat_messages')
+        .select('*, tasks(status)')
+        .eq('user_id', userId)
+        .eq('agent_id', selectedAgent.agent_id)
+        .order('created_at', { ascending: true });
+
+      if (messagesError) throw messagesError;
+
+      const formattedMessages = messagesData.map((msg: any) => ({
+        id: msg.id,
+        message_text: msg.message_text,
+        sender_type: msg.sender_type,
+        created_at: msg.created_at,
+        task_id: msg.task_id,
+        task_status: msg.tasks?.status
+      }));
+
+      setMessages(formattedMessages);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    }
+  };
+
+  const subscribeToMessages = () => {
+    if (!selectedAgent || !userId) return;
+
+    const channel = supabase
+      .channel(`messages:${userId}:${selectedAgent.agent_id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `user_id=eq.${userId},agent_id=eq.${selectedAgent.agent_id}`
+        },
+        async (payload) => {
+          console.log('New message received:', payload);
+          
+          let taskStatus = null;
+          if (payload.new.task_id) {
+            const { data: taskData } = await supabase
+              .from('tasks')
+              .select('status')
+              .eq('id', payload.new.task_id)
+              .single();
+            taskStatus = taskData?.status;
+          }
+
+          const newMessage = {
+            id: payload.new.id,
+            message_text: payload.new.message_text,
+            sender_type: payload.new.sender_type,
+            created_at: payload.new.created_at,
+            task_id: payload.new.task_id,
+            task_status: taskStatus
+          };
+
+          setMessages((prev) => [...prev, newMessage]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
     };
+  };
 
-    setMessages([...messages, newMessage]);
-    setInputMessage('');
+  const subscribeToTasks = () => {
+    if (!selectedAgent || !userId) return;
 
-    // TODO: Send to AI agent backend and get response
-    // Simulate agent response after 1 second
-    setTimeout(() => {
-      const agentMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: `This is a simulated response from ${selectedAgent.display_name}. Connect to your AI backend here.`,
-        sender: 'agent',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, agentMessage]);
-    }, 1000);
+    const channel = supabase
+      .channel(`tasks:${userId}:${selectedAgent.agent_id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'tasks',
+          filter: `user_id=eq.${userId},agent_id=eq.${selectedAgent.agent_id}`
+        },
+        (payload) => {
+          console.log('Task updated:', payload);
+          
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.task_id === payload.new.id
+                ? { ...msg, task_status: payload.new.status }
+                : msg
+            )
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
+
+  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInputMessage(value);
+
+    if (value.endsWith('#') && selectedAgent) {
+      try {
+        const response = await listTasks({
+          user_id: userId,
+          agent_id: selectedAgent.agent_id,
+          limit: 10
+        });
+        
+        setTasks(response.tasks);
+        
+        const inputRect = inputRef.current?.getBoundingClientRect();
+        if (inputRect) {
+          setDropdownPosition({
+            top: inputRect.top - 320,
+            left: inputRect.left
+          });
+        }
+        
+        setShowTaskDropdown(true);
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+      }
+    } else {
+      setShowTaskDropdown(false);
+    }
+  };
+
+  const handleTaskSelect = (task: Task) => {
+    const messageWithoutHash = inputMessage.slice(0, -1);
+    setInputMessage(`${messageWithoutHash}[Task: ${task.title}]`);
+    setShowTaskDropdown(false);
+  };
+
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || !selectedAgent || !userId || sending) return;
+
+    const isTaskCreation = inputMessage.trim().startsWith('/create');
+
+    try {
+      setSending(true);
+
+      if (isTaskCreation) {
+        await createTask({
+          user_id: userId,
+          agent_id: selectedAgent.agent_id,
+          message: inputMessage
+        });
+      } else {
+        await sendChatMessage({
+          user_id: userId,
+          agent_id: selectedAgent.agent_id,
+          message: inputMessage
+        });
+      }
+
+      setInputMessage('');
+    } catch (error: any) {
+      console.error('Error sending message:', error);
+      alert(error.message || 'Failed to send message');
+    } finally {
+      setSending(false);
+    }
   };
 
   if (loading) {
@@ -108,27 +290,23 @@ export default function MyChats() {
 
   return (
     <div className="flex h-full">
-      {/* Left Sidebar - Agent List */}
       <div className="w-80 border-r border-gray-200 bg-white flex flex-col">
-        {/* Header */}
         <div className="p-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">Chats</h2>
         </div>
 
-        {/* Agent List */}
         <div className="flex-1 overflow-y-auto">
           {networkAgents.map((agent) => (
             <button
               key={agent.network_id}
               onClick={() => {
                 setSelectedAgent(agent);
-                setMessages([]); // Clear messages when switching agents
+                setMessages([]);
               }}
               className={`w-full p-4 flex items-center gap-3 hover:bg-gray-50 transition-colors border-b border-gray-100 ${
                 selectedAgent?.agent_id === agent.agent_id ? 'bg-blue-50' : ''
               }`}
             >
-              {/* Avatar */}
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white flex-shrink-0">
                 {agent.avatar_url ? (
                   <img 
@@ -141,7 +319,6 @@ export default function MyChats() {
                 )}
               </div>
 
-              {/* Info */}
               <div className="flex-1 text-left min-w-0">
                 <h3 className="font-medium text-gray-900 truncate">
                   {agent.display_name}
@@ -155,11 +332,9 @@ export default function MyChats() {
         </div>
       </div>
 
-      {/* Right Side - Chat Window */}
-      <div className="flex-1 flex flex-col bg-gray-50">
+      <div className="flex-1 flex flex-col bg-gray-50 relative">
         {selectedAgent ? (
           <>
-            {/* Chat Header */}
             <div className="bg-white border-b border-gray-200 p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white">
                 {selectedAgent.avatar_url ? (
@@ -182,7 +357,6 @@ export default function MyChats() {
               </div>
             </div>
 
-            {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {messages.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
@@ -204,45 +378,39 @@ export default function MyChats() {
                     <p className="text-sm text-gray-500 mb-4">
                       {selectedAgent.goal || 'Start a conversation'}
                     </p>
+                    <p className="text-xs text-gray-400">
+                      Type /create to assign a task
+                    </p>
                   </div>
                 </div>
               ) : (
-                messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                        message.sender === 'user'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-white text-gray-900 border border-gray-200'
-                      }`}
-                    >
-                      <p className="text-sm">{message.text}</p>
-                    </div>
-                  </div>
-                ))
+                <>
+                  {messages.map((message) => (
+                    <MessageBubble key={message.id} message={message} />
+                  ))}
+                  <div ref={messagesEndRef} />
+                </>
               )}
             </div>
 
-            {/* Input Area */}
             <div className="bg-white border-t border-gray-200 p-4">
               <div className="flex gap-2">
                 <input
+                  ref={inputRef}
                   type="text"
                   value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
+                  onChange={handleInputChange}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder={`Message ${selectedAgent.display_name}...`}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder={`Message ${selectedAgent.display_name}... (type /create for tasks, # for task list)`}
+                  disabled={sending}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
                 />
                 <button
                   onClick={handleSendMessage}
-                  disabled={!inputMessage.trim()}
+                  disabled={!inputMessage.trim() || sending}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                 >
-                  <Send size={18} />
+                  {sending ? <Loader size={18} className="animate-spin" /> : <Send size={18} />}
                 </button>
               </div>
             </div>
@@ -251,6 +419,14 @@ export default function MyChats() {
           <div className="flex items-center justify-center h-full">
             <p className="text-gray-500">Select a chat to start messaging</p>
           </div>
+        )}
+
+        {showTaskDropdown && (
+          <TaskDropdown
+            tasks={tasks}
+            onSelectTask={handleTaskSelect}
+            position={dropdownPosition}
+          />
         )}
       </div>
     </div>
