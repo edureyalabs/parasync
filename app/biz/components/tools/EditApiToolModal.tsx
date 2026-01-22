@@ -25,7 +25,7 @@ export default function EditApiToolModal({ tool, userId, onClose, onToolUpdated 
   const [toolDescription, setToolDescription] = useState(tool.tool_description);
   const [url, setUrl] = useState(tool.url);
   const [httpMethod, setHttpMethod] = useState(tool.http_method);
-  const [timeout, setTimeout] = useState(tool.timeout_seconds);
+  const [timeoutSeconds, setTimeoutSeconds] = useState(tool.timeout_seconds);
   
   const objectToArray = (obj: Record<string, string>): KeyValuePair[] => {
     const entries = Object.entries(obj || {});
@@ -123,7 +123,7 @@ export default function EditApiToolModal({ tool, userId, onClose, onToolUpdated 
           headers: convertToObject(headers),
           query_params: convertToObject(queryParams),
           body_params: convertToObject(bodyParams),
-          timeout_seconds: timeout,
+          timeout_seconds: timeoutSeconds,
           updated_at: new Date().toISOString(),
         })
         .eq('id', tool.id)
@@ -303,8 +303,8 @@ export default function EditApiToolModal({ tool, userId, onClose, onToolUpdated 
                 </label>
                 <input
                   type="number"
-                  value={timeout}
-                  onChange={(e) => setTimeout(Math.min(MAX_TIMEOUT, Math.max(1, parseInt(e.target.value) || 30)))}
+                  value={timeoutSeconds}
+                  onChange={(e) => setTimeoutSeconds(Math.min(MAX_TIMEOUT, Math.max(1, parseInt(e.target.value) || 30)))}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   min="1"
                   max={MAX_TIMEOUT}
@@ -357,31 +357,3 @@ export default function EditApiToolModal({ tool, userId, onClose, onToolUpdated 
     </div>
   );
 }
-```
-
-## 6. Update `app/biz/page.tsx` to include Tools
-```typescript
-// Update the imports section
-import Tools from './components/Tools';
-
-// Update the renderContent function to include the tools case:
-const renderContent = () => {
-  switch (activeSection) {
-    case 'dashboard':
-      return (
-        <div className="flex items-center justify-center h-full">
-          <h1 className="text-4xl font-bold text-gray-800">Dashboard</h1>
-        </div>
-      );
-    case 'chats':
-      return <Chats userId={userId} />;
-    case 'agents':
-      return <Agents userId={userId} />;
-    case 'tools':
-      return <Tools userId={userId} />;
-    case 'account':
-      return <Account userEmail={userEmail} userId={userId} onLogout={handleLogout} />;
-    default:
-      return null;
-  }
-};

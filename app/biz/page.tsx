@@ -7,6 +7,7 @@ import Sidebar from './components/Sidebar';
 import Account from './components/Account';
 import Agents from './components/Agents';
 import Chats from './components/Chats';
+import Tools from './components/Tools';
 
 export default function Page() {
   const [activeSection, setActiveSection] = useState<'dashboard' | 'chats' | 'agents' | 'tools' | 'account'>('dashboard');
@@ -63,11 +64,7 @@ export default function Page() {
       case 'agents':
         return <Agents userId={userId} />;
       case 'tools':
-        return (
-          <div className="flex items-center justify-center h-full">
-            <h1 className="text-4xl font-bold text-gray-800">Tools</h1>
-          </div>
-        );
+        return <Tools userId={userId} />;
       case 'account':
         return <Account userEmail={userEmail} userId={userId} onLogout={handleLogout} />;
       default:

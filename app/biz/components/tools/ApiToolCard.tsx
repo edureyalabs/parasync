@@ -101,7 +101,7 @@ export default function ApiToolCard({ tool, userId, onDelete, onUpdate }: ApiToo
               <p className="text-gray-700 text-sm font-mono truncate flex-1" title={tool.url}>
                 {truncateUrl(tool.url, 40)}
               </p>
-              
+              <a
                 href={tool.url}
                 target="_blank"
                 rel="noopener noreferrer"

@@ -26,7 +26,7 @@ export default function CreateApiToolModal({ userId, onClose, onToolCreated }: C
   const [toolDescription, setToolDescription] = useState('');
   const [url, setUrl] = useState('');
   const [httpMethod, setHttpMethod] = useState('GET');
-  const [timeout, setTimeout] = useState(DEFAULT_TIMEOUT);
+  const [timeoutSeconds, setTimeoutSeconds] = useState(DEFAULT_TIMEOUT);
   
   const [headers, setHeaders] = useState<KeyValuePair[]>([{ key: '', value: '' }]);
   const [queryParams, setQueryParams] = useState<KeyValuePair[]>([{ key: '', value: '' }]);
@@ -173,7 +173,7 @@ export default function CreateApiToolModal({ userId, onClose, onToolCreated }: C
           headers: convertToObject(headers),
           query_params: convertToObject(queryParams),
           body_params: convertToObject(bodyParams),
-          timeout_seconds: timeout,
+          timeout_seconds: timeoutSeconds,
         })
         .select()
         .single();
@@ -339,56 +339,57 @@ export default function CreateApiToolModal({ userId, onClose, onToolCreated }: C
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-Timeout (seconds)
-</label>
-<input
-type="number"
-value={timeout}
-onChange={(e) => setTimeout(Math.min(MAX_TIMEOUT, Math.max(1, parseInt(e.target.value) || DEFAULT_TIMEOUT)))}
-className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-min="1"
-max={MAX_TIMEOUT}
-/>
-<p className="text-xs text-gray-500 mt-1">Max: {MAX_TIMEOUT}s</p>
-</div>
-</div>
-</div>
-{/* Request Configuration */}
-      <div className="space-y-4 pt-4 border-t border-gray-200">
-        <h3 className="font-semibold text-gray-900">Request Configuration</h3>
-        
-        {renderKeyValueInputs(headers, 'headers', 'Headers')}
-        {renderKeyValueInputs(queryParams, 'query', 'Query Parameters')}
-        {(httpMethod === 'POST' || httpMethod === 'PUT' || httpMethod === 'PATCH') && 
-          renderKeyValueInputs(bodyParams, 'body', 'Body Parameters')}
+                  Timeout (seconds)
+                </label>
+                <input
+                  type="number"
+                  value={timeoutSeconds}
+                  onChange={(e) => setTimeoutSeconds(Math.min(MAX_TIMEOUT, Math.max(1, parseInt(e.target.value) || DEFAULT_TIMEOUT)))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  min="1"
+                  max={MAX_TIMEOUT}
+                />
+                <p className="text-xs text-gray-500 mt-1">Max: {MAX_TIMEOUT}s</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Request Configuration */}
+          <div className="space-y-4 pt-4 border-t border-gray-200">
+            <h3 className="font-semibold text-gray-900">Request Configuration</h3>
+            
+            {renderKeyValueInputs(headers, 'headers', 'Headers')}
+            {renderKeyValueInputs(queryParams, 'query', 'Query Parameters')}
+            {(httpMethod === 'POST' || httpMethod === 'PUT' || httpMethod === 'PATCH') && 
+              renderKeyValueInputs(bodyParams, 'body', 'Body Parameters')}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={creating}
+            className="px-6 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleCreate}
+            disabled={creating || nameStatus !== 'available' || !toolName.trim() || !toolDescription.trim() || !url.trim()}
+            className="flex-1 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+          >
+            {creating ? (
+              <>
+                <Loader2 className="animate-spin" size={18} />
+                Creating...
+              </>
+            ) : (
+              'Create API Tool'
+            )}
+          </button>
+        </div>
       </div>
     </div>
-
-    {/* Footer */}
-    <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex gap-3">
-      <button
-        onClick={onClose}
-        disabled={creating}
-        className="px-6 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors font-medium"
-      >
-        Cancel
-      </button>
-      <button
-        onClick={handleCreate}
-        disabled={creating || nameStatus !== 'available' || !toolName.trim() || !toolDescription.trim() || !url.trim()}
-        className="flex-1 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
-      >
-        {creating ? (
-          <>
-            <Loader2 className="animate-spin" size={18} />
-            Creating...
-          </>
-        ) : (
-          'Create API Tool'
-        )}
-      </button>
-    </div>
-  </div>
-</div>
-);
+  );
 }
