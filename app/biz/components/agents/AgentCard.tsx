@@ -1,9 +1,10 @@
 // app/biz/components/agents/AgentCard.tsx
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Bot, Trash2, Loader2, AlertCircle, Edit2, Upload } from 'lucide-react';
+import { Bot, Trash2, Loader2, AlertCircle, Edit2, Upload, Wrench } from 'lucide-react';
 import { Agent } from '../Agents';
 import EditAgentFieldModal from './EditAgentFieldModal';
+import ManageAgentToolsModal from './ManageAgentToolsModal';
 
 interface AgentCardProps {
   agent: Agent;
@@ -22,6 +23,29 @@ export default function AgentCard({ agent, userId, onDelete, onUpdate }: AgentCa
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [editingField, setEditingField] = useState<EditField>(null);
+  const [showToolsModal, setShowToolsModal] = useState(false);
+  const [toolsCount, setToolsCount] = useState(0);
+  const [loadingTools, setLoadingTools] = useState(true);
+
+  useEffect(() => {
+    loadToolsCount();
+  }, [agent.id]);
+
+  const loadToolsCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('agent_tools')
+        .select('*', { count: 'exact', head: true })
+        .eq('agent_id', agent.id);
+
+      if (error) throw error;
+      setToolsCount(count || 0);
+    } catch (error) {
+      console.error('Error loading tools count:', error);
+    } finally {
+      setLoadingTools(false);
+    }
+  };
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
@@ -211,6 +235,27 @@ export default function AgentCard({ agent, userId, onDelete, onUpdate }: AgentCa
             </p>
           </div>
 
+          {/* Tools Section - NEW */}
+          <div className="pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-semibold text-gray-500 uppercase">API Tools</label>
+              {loadingTools ? (
+                <Loader2 className="animate-spin text-gray-400" size={14} />
+              ) : (
+                <span className="text-xs font-semibold text-blue-600">
+                  {toolsCount} mapped
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => setShowToolsModal(true)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors font-medium"
+            >
+              <Wrench size={18} />
+              Manage Tools
+            </button>
+          </div>
+
           {/* Action Buttons */}
           <div className="pt-4 border-t border-gray-200">
             <button
@@ -236,6 +281,19 @@ export default function AgentCard({ agent, userId, onDelete, onUpdate }: AgentCa
           currentValue={agent[editingField]}
           onClose={() => setEditingField(null)}
           onSave={handleSaveField}
+        />
+      )}
+
+      {/* Manage Tools Modal - NEW */}
+      {showToolsModal && (
+        <ManageAgentToolsModal
+          agentId={agent.id}
+          agentName={agent.display_name}
+          userId={userId}
+          onClose={() => {
+            setShowToolsModal(false);
+            loadToolsCount(); // Refresh count when modal closes
+          }}
         />
       )}
 
