@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { User, Send, Loader } from 'lucide-react';
+import { User, Send, Loader, Clock, CheckCircle, XCircle, PlayCircle } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 
 interface NetworkAgent {
@@ -26,6 +26,27 @@ interface Message {
   metadata?: any;
 }
 
+interface Task {
+  id: string;
+  task_name: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  tool_name: string;
+  result?: any;
+  error_message?: string;
+  created_at: string;
+  completed_at?: string;
+}
+
+interface ActiveTask {
+  id: string;
+  name: string;
+  status: string;
+  progress: number;
+  created_at: string;
+}
+
+// const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+
 export default function MyChats() {
   const [networkAgents, setNetworkAgents] = useState<NetworkAgent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<NetworkAgent | null>(null);
@@ -34,6 +55,8 @@ export default function MyChats() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [userId, setUserId] = useState<string>('');
+  const [activeTasks, setActiveTasks] = useState<ActiveTask[]>([]);
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -45,8 +68,13 @@ export default function MyChats() {
   useEffect(() => {
     if (selectedAgent && userId) {
       fetchMessages();
+      fetchTasks();
       const unsubscribe = subscribeToMessages();
-      return unsubscribe;
+      const taskInterval = setInterval(fetchTasks, 5000);
+      return () => {
+        unsubscribe();
+        clearInterval(taskInterval);
+      };
     }
   }, [selectedAgent, userId]);
 
@@ -121,6 +149,35 @@ export default function MyChats() {
     }
   };
 
+  const fetchTasks = async () => {
+  if (!selectedAgent || !userId) return;
+
+  try {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('agent_id', selectedAgent.agent_id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const running = data?.filter(t => t.status === 'running') || [];
+    const active = running.map(task => ({
+      id: task.id,
+      name: task.task_name,
+      status: task.status,
+      progress: task.progress,
+      created_at: task.created_at
+    }));
+
+    setActiveTasks(active);
+    setAllTasks(data || []);
+  } catch (error) {
+    console.error('Error fetching tasks:', error);
+  }
+};
+
   const subscribeToMessages = () => {
     if (!selectedAgent || !userId) return () => {};
 
@@ -135,8 +192,6 @@ export default function MyChats() {
           filter: `user_id=eq.${userId},agent_id=eq.${selectedAgent.agent_id}`
         },
         (payload) => {
-          console.log('New message received:', payload);
-          
           const newMessage: Message = {
             id: payload.new.id,
             message_text: payload.new.message_text,
@@ -159,8 +214,6 @@ export default function MyChats() {
           filter: `user_id=eq.${userId},agent_id=eq.${selectedAgent.agent_id}`
         },
         (payload) => {
-          console.log('Message updated:', payload);
-          
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === payload.new.id
@@ -183,34 +236,47 @@ export default function MyChats() {
   };
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || !selectedAgent || !userId || sending) return;
+  if (!inputMessage.trim() || !selectedAgent || !userId || sending) return;
 
-    try {
-      setSending(true);
+  try {
+    setSending(true);
 
-      // Insert user message directly to Supabase with pending status
-      const { data, error } = await supabase
-        .from('chat_messages')
-        .insert({
-          user_id: userId,
-          agent_id: selectedAgent.agent_id,
-          message_text: inputMessage,
-          sender_type: 'user',
-          status: 'pending'  // Trigger will process this
-        })
-        .select()
-        .single();
+    // Just insert to Supabase with pending status
+    // The database trigger will handle the rest
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .insert({
+        user_id: userId,
+        agent_id: selectedAgent.agent_id,
+        message_text: inputMessage,
+        sender_type: 'user',
+        status: 'pending'
+      })
+      .select()
+      .single();
 
-      if (error) throw error;
+    if (error) throw error;
 
-      setInputMessage('');
-      
-      // Message will appear via real-time subscription
-    } catch (error: any) {
-      console.error('Error sending message:', error);
-      alert(error.message || 'Failed to send message');
-    } finally {
-      setSending(false);
+    setInputMessage('');
+    
+  } catch (error: any) {
+    console.error('Error sending message:', error);
+    alert(error.message || 'Failed to send message');
+  } finally {
+    setSending(false);
+  }
+};
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'running':
+        return <PlayCircle className="text-blue-500 animate-pulse" size={16} />;
+      case 'completed':
+        return <CheckCircle className="text-green-500" size={16} />;
+      case 'failed':
+        return <XCircle className="text-red-500" size={16} />;
+      default:
+        return <Clock className="text-yellow-500" size={16} />;
     }
   };
 
@@ -235,7 +301,6 @@ export default function MyChats() {
 
   return (
     <div className="flex h-full">
-      {/* Agent List Sidebar */}
       <div className="w-80 border-r border-gray-200 bg-white flex flex-col">
         <div className="p-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">Chats</h2>
@@ -248,6 +313,8 @@ export default function MyChats() {
               onClick={() => {
                 setSelectedAgent(agent);
                 setMessages([]);
+                setActiveTasks([]);
+                setAllTasks([]);
               }}
               className={`w-full p-4 flex items-center gap-3 hover:bg-gray-50 transition-colors border-b border-gray-100 ${
                 selectedAgent?.agent_id === agent.agent_id ? 'bg-blue-50' : ''
@@ -278,11 +345,9 @@ export default function MyChats() {
         </div>
       </div>
 
-      {/* Chat Area */}
       <div className="flex-1 flex flex-col bg-gray-50">
         {selectedAgent ? (
           <>
-            {/* Chat Header */}
             <div className="bg-white border-b border-gray-200 p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white">
                 {selectedAgent.avatar_url ? (
@@ -295,7 +360,7 @@ export default function MyChats() {
                   <User size={20} />
                 )}
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="font-semibold text-gray-900">
                   {selectedAgent.display_name}
                 </h3>
@@ -303,9 +368,31 @@ export default function MyChats() {
                   {selectedAgent.role || 'AI Agent'}
                 </p>
               </div>
+              {activeTasks.length > 0 && (
+                <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
+                  <PlayCircle size={14} className="animate-pulse" />
+                  {activeTasks.length} active task{activeTasks.length !== 1 ? 's' : ''}
+                </div>
+              )}
             </div>
 
-            {/* Messages Area */}
+            {activeTasks.length > 0 && (
+              <div className="bg-white border-b border-gray-200 p-4">
+                <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Active Tasks</h4>
+                <div className="space-y-2">
+                  {activeTasks.map((task) => (
+                    <div key={task.id} className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
+                      {getStatusIcon(task.status)}
+                      <span className="text-sm font-medium text-gray-700 flex-1 truncate">
+                        {task.name}
+                      </span>
+                      <span className="text-xs text-gray-500">{task.progress}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {messages.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
@@ -339,7 +426,6 @@ export default function MyChats() {
               )}
             </div>
 
-            {/* Input Area */}
             <div className="bg-white border-t border-gray-200 p-4">
               <div className="flex gap-2">
                 <input
