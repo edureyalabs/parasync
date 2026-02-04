@@ -1,11 +1,11 @@
 // app/biz/components/Sidebar.tsx
 import Image from 'next/image';
-import { LogOut, LayoutDashboard, Bot, Wrench, User, MessageSquare, Code } from 'lucide-react';
+import { LogOut, LayoutDashboard, Bot, User, MessageSquare, Code } from 'lucide-react';
 import logoImage from './logo.jpg';
 
 interface SidebarProps {
-  activeSection: 'dashboard' | 'chats' | 'agents' | 'tools' | 'custom-tools' | 'account';
-  onSectionChange: (section: 'dashboard' | 'chats' | 'agents' | 'tools' | 'custom-tools' | 'account') => void;
+  activeSection: 'dashboard' | 'chats' | 'agents' | 'custom-tools' | 'account';
+  onSectionChange: (section: 'dashboard' | 'chats' | 'agents' | 'custom-tools' | 'account') => void;
   userEmail: string;
   onLogout: () => void;
 }
@@ -86,20 +86,6 @@ export default function Sidebar({
             >
               <Code size={24} />
               <span className="text-xs mt-1">Tools</span>
-            </button>
-          </li>
-          <li>
-            <button 
-              onClick={() => onSectionChange('tools')}
-              className={`w-full flex flex-col items-center justify-center px-2 py-3 rounded-lg transition-colors ${
-                activeSection === 'tools' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'hover:bg-gray-800'
-              }`}
-              title="API Tools"
-            >
-              <Wrench size={24} />
-              <span className="text-xs mt-1">API</span>
             </button>
           </li>
           <li>

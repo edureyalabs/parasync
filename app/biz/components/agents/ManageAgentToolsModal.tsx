@@ -1,7 +1,7 @@
 // app/biz/components/agents/ManageAgentToolsModal.tsx
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { X, Loader2, Wrench, Check, AlertCircle } from 'lucide-react';
+import { X, Loader2, Code, Check, AlertCircle, Clock, Package } from 'lucide-react';
 
 interface ManageAgentToolsModalProps {
   agentId: string;
@@ -10,23 +10,13 @@ interface ManageAgentToolsModalProps {
   onClose: () => void;
 }
 
-interface ApiTool {
+interface CustomTool {
   id: string;
   tool_name: string;
   tool_description: string;
-  url: string;
-  http_method: string;
+  timeout_seconds: number;
+  required_packages: string[];
 }
-
-const METHOD_COLORS: Record<string, string> = {
-  GET: 'bg-blue-100 text-blue-800 border-blue-200',
-  POST: 'bg-green-100 text-green-800 border-green-200',
-  PUT: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  PATCH: 'bg-orange-100 text-orange-800 border-orange-200',
-  DELETE: 'bg-red-100 text-red-800 border-red-200',
-  HEAD: 'bg-purple-100 text-purple-800 border-purple-200',
-  OPTIONS: 'bg-gray-100 text-gray-800 border-gray-200',
-};
 
 export default function ManageAgentToolsModal({
   agentId,
@@ -36,7 +26,7 @@ export default function ManageAgentToolsModal({
 }: ManageAgentToolsModalProps) {
   const supabase = createClient();
   
-  const [allTools, setAllTools] = useState<ApiTool[]>([]);
+  const [allTools, setAllTools] = useState<CustomTool[]>([]);
   const [mappedToolIds, setMappedToolIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -50,10 +40,10 @@ export default function ManageAgentToolsModal({
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load all user's tools
+      // Load all user's custom tools
       const { data: toolsData, error: toolsError } = await supabase
-        .from('api_tools')
-        .select('id, tool_name, tool_description, url, http_method')
+        .from('custom_tools')
+        .select('id, tool_name, tool_description, timeout_seconds, required_packages')
         .eq('user_id', userId)
         .order('tool_name');
 
@@ -61,7 +51,7 @@ export default function ManageAgentToolsModal({
 
       // Load currently mapped tools for this agent
       const { data: mappedData, error: mappedError } = await supabase
-        .from('agent_tools')
+        .from('agent_custom_tools')
         .select('tool_id')
         .eq('agent_id', agentId);
 
@@ -86,7 +76,7 @@ export default function ManageAgentToolsModal({
       if (isCurrentlyMapped) {
         // Remove mapping
         const { error } = await supabase
-          .from('agent_tools')
+          .from('agent_custom_tools')
           .delete()
           .eq('agent_id', agentId)
           .eq('tool_id', toolId);
@@ -103,7 +93,7 @@ export default function ManageAgentToolsModal({
       } else {
         // Add mapping
         const { error } = await supabase
-          .from('agent_tools')
+          .from('agent_custom_tools')
           .insert({
             agent_id: agentId,
             tool_id: toolId,
@@ -134,9 +124,9 @@ export default function ManageAgentToolsModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold">Manage API Tools</h2>
+            <h2 className="text-xl font-bold">Manage Custom Tools</h2>
             <p className="text-sm text-white/80 mt-1">{agentName}</p>
           </div>
           <button
@@ -167,18 +157,18 @@ export default function ManageAgentToolsModal({
         <div className="flex-1 overflow-y-auto p-6">
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <Loader2 className="animate-spin text-blue-600" size={32} />
+              <Loader2 className="animate-spin text-purple-600" size={32} />
             </div>
           ) : allTools.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-center">
-              <Wrench size={64} className="text-gray-300 mb-4" />
-              <h3 className="text-xl font-bold text-gray-800 mb-2">No API Tools Yet</h3>
+              <Code size={64} className="text-gray-300 mb-4" />
+              <h3 className="text-xl font-bold text-gray-800 mb-2">No Custom Tools Yet</h3>
               <p className="text-gray-600 mb-4">
-                Create API tools first to map them to this agent
+                Create custom tools first to map them to this agent
               </p>
               <button
                 onClick={onClose}
-                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
+                className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-medium"
               >
                 Close
               </button>
@@ -187,7 +177,7 @@ export default function ManageAgentToolsModal({
             <div className="space-y-3">
               <div className="mb-4">
                 <p className="text-sm text-gray-600">
-                  Select the API tools you want to map to this agent. 
+                  Select the custom tools you want to map to this agent. 
                   <span className="font-semibold text-gray-800 ml-1">
                     {mappedToolIds.size} of {allTools.length} tools mapped
                   </span>
@@ -196,14 +186,13 @@ export default function ManageAgentToolsModal({
 
               {allTools.map((tool) => {
                 const isMapped = mappedToolIds.has(tool.id);
-                const methodColorClass = METHOD_COLORS[tool.http_method] || METHOD_COLORS.GET;
 
                 return (
                   <div
                     key={tool.id}
                     className={`border rounded-lg p-4 transition-all ${
                       isMapped
-                        ? 'border-blue-500 bg-blue-50'
+                        ? 'border-purple-500 bg-purple-50'
                         : 'border-gray-200 bg-white hover:border-gray-300'
                     }`}
                   >
@@ -213,7 +202,7 @@ export default function ManageAgentToolsModal({
                         checked={isMapped}
                         onChange={() => handleToggleTool(tool.id, isMapped)}
                         disabled={saving}
-                        className="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer disabled:cursor-not-allowed"
+                        className="mt-1 w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500 cursor-pointer disabled:cursor-not-allowed"
                       />
                       
                       <div className="flex-1 min-w-0">
@@ -223,9 +212,16 @@ export default function ManageAgentToolsModal({
                               {tool.tool_name}
                             </h4>
                             <div className="flex items-center gap-2 mt-1">
-                              <span className={`px-2 py-0.5 rounded text-xs font-semibold border ${methodColorClass}`}>
-                                {tool.http_method}
-                              </span>
+                              <div className="flex items-center gap-1 text-xs text-gray-600">
+                                <Clock size={12} />
+                                {tool.timeout_seconds}s timeout
+                              </div>
+                              {tool.required_packages.length > 0 && (
+                                <div className="flex items-center gap-1 text-xs text-gray-600">
+                                  <Package size={12} />
+                                  {tool.required_packages.length} packages
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -234,9 +230,20 @@ export default function ManageAgentToolsModal({
                           {truncateText(tool.tool_description, 120)}
                         </p>
                         
-                        <p className="text-xs text-gray-500 font-mono truncate" title={tool.url}>
-                          {truncateText(tool.url, 60)}
-                        </p>
+                        {tool.required_packages.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {tool.required_packages.slice(0, 3).map((pkg) => (
+                              <span key={pkg} className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded">
+                                {pkg}
+                              </span>
+                            ))}
+                            {tool.required_packages.length > 3 && (
+                              <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                                +{tool.required_packages.length - 3} more
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </label>
                   </div>
@@ -251,7 +258,7 @@ export default function ManageAgentToolsModal({
           <div className="text-sm text-gray-600">
             {mappedToolIds.size > 0 ? (
               <span>
-                <span className="font-semibold text-blue-600">{mappedToolIds.size}</span> tool
+                <span className="font-semibold text-purple-600">{mappedToolIds.size}</span> tool
                 {mappedToolIds.size !== 1 ? 's' : ''} mapped to this agent
               </span>
             ) : (
@@ -261,7 +268,7 @@ export default function ManageAgentToolsModal({
           <button
             onClick={onClose}
             disabled={saving}
-            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors"
+            className="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors"
           >
             Done
           </button>

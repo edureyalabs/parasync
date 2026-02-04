@@ -1,7 +1,7 @@
 // app/biz/components/agents/AgentCard.tsx
 import { useState, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Bot, Trash2, Loader2, AlertCircle, Edit2, Upload, Wrench } from 'lucide-react';
+import { Bot, Trash2, Loader2, AlertCircle, Edit2, Upload, Code } from 'lucide-react';
 import { Agent } from '../Agents';
 import EditAgentFieldModal from './EditAgentFieldModal';
 import ManageAgentToolsModal from './ManageAgentToolsModal';
@@ -33,8 +33,9 @@ export default function AgentCard({ agent, userId, onDelete, onUpdate }: AgentCa
 
   const loadToolsCount = async () => {
     try {
+      // UPDATED: Query agent_custom_tools instead of agent_tools
       const { count, error } = await supabase
-        .from('agent_tools')
+        .from('agent_custom_tools')
         .select('*', { count: 'exact', head: true })
         .eq('agent_id', agent.id);
 
@@ -235,23 +236,23 @@ export default function AgentCard({ agent, userId, onDelete, onUpdate }: AgentCa
             </p>
           </div>
 
-          {/* Tools Section - NEW */}
+          {/* Tools Section - UPDATED LABEL */}
           <div className="pt-4 border-t border-gray-200">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-semibold text-gray-500 uppercase">API Tools</label>
+              <label className="text-xs font-semibold text-gray-500 uppercase">Custom Tools</label>
               {loadingTools ? (
                 <Loader2 className="animate-spin text-gray-400" size={14} />
               ) : (
-                <span className="text-xs font-semibold text-blue-600">
+                <span className="text-xs font-semibold text-purple-600">
                   {toolsCount} mapped
                 </span>
               )}
             </div>
             <button
               onClick={() => setShowToolsModal(true)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors font-medium"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors font-medium"
             >
-              <Wrench size={18} />
+              <Code size={18} />
               Manage Tools
             </button>
           </div>
@@ -284,7 +285,7 @@ export default function AgentCard({ agent, userId, onDelete, onUpdate }: AgentCa
         />
       )}
 
-      {/* Manage Tools Modal - NEW */}
+      {/* Manage Tools Modal - UPDATED */}
       {showToolsModal && (
         <ManageAgentToolsModal
           agentId={agent.id}

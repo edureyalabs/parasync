@@ -8,11 +8,10 @@ import Sidebar from './components/Sidebar';
 import Account from './components/Account';
 import Agents from './components/Agents';
 import Chats from './components/Chats';
-import Tools from './components/Tools';
 import CustomTools from './components/CustomTools';
 
 export default function Page() {
-  const [activeSection, setActiveSection] = useState<'dashboard' | 'chats' | 'agents' | 'tools' | 'custom-tools' | 'account'>('dashboard');
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'chats' | 'agents' | 'custom-tools' | 'account'>('dashboard');
   const [userEmail, setUserEmail] = useState<string>('');
   const [userId, setUserId] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -63,8 +62,6 @@ export default function Page() {
         return <Agents userId={userId} />;
       case 'custom-tools':
         return <CustomTools userId={userId} />;
-      case 'tools':
-        return <Tools userId={userId} />;
       case 'account':
         return <Account userEmail={userEmail} userId={userId} onLogout={handleLogout} />;
       default:
