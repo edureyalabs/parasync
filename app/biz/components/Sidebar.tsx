@@ -1,10 +1,11 @@
+// app/biz/components/Sidebar.tsx
 import Image from 'next/image';
-import { LogOut, LayoutDashboard, Bot, Wrench, User, MessageSquare } from 'lucide-react';
+import { LogOut, LayoutDashboard, Bot, Wrench, User, MessageSquare, Code } from 'lucide-react';
 import logoImage from './logo.jpg';
 
 interface SidebarProps {
-  activeSection: 'dashboard' | 'chats' | 'agents' | 'tools' | 'account';
-  onSectionChange: (section: 'dashboard' | 'chats' | 'agents' | 'tools' | 'account') => void;
+  activeSection: 'dashboard' | 'chats' | 'agents' | 'tools' | 'custom-tools' | 'account';
+  onSectionChange: (section: 'dashboard' | 'chats' | 'agents' | 'tools' | 'custom-tools' | 'account') => void;
   userEmail: string;
   onLogout: () => void;
 }
@@ -17,25 +18,18 @@ export default function Sidebar({
 }: SidebarProps) {
   return (
     <aside className="w-20 bg-black text-white flex flex-col h-full items-center">
-    {/* Workspace Header */}
-    <div className="p-4 border-b border-gray-700 w-full flex flex-col items-center gap-2">
-      <div className="w-10 h-10 rounded-full overflow-hidden bg-white flex items-center justify-center">
-        <Image
-          src={logoImage}
-          alt="Logo"
-          width={32}
-          height={32}
-          className="object-cover"
-        />
+      <div className="p-4 border-b border-gray-700 w-full flex flex-col items-center gap-2">
+        <div className="w-10 h-10 rounded-full overflow-hidden bg-white flex items-center justify-center">
+          <Image
+            src={logoImage}
+            alt="Logo"
+            width={32}
+            height={32}
+            className="object-cover"
+          />
+        </div>
       </div>
 
-      {/* <h2 className="text-xs font-semibold text-gray-400 text-center">
-        Parasync
-      </h2> */}
-    </div>
-
-
-      {/* Navigation Icons */}
       <nav className="flex-1 p-3 w-full">
         <ul className="space-y-3">
           <li>
@@ -82,16 +76,30 @@ export default function Sidebar({
           </li>
           <li>
             <button 
+              onClick={() => onSectionChange('custom-tools')}
+              className={`w-full flex flex-col items-center justify-center px-2 py-3 rounded-lg transition-colors ${
+                activeSection === 'custom-tools' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'hover:bg-gray-800'
+              }`}
+              title="Custom Tools"
+            >
+              <Code size={24} />
+              <span className="text-xs mt-1">Tools</span>
+            </button>
+          </li>
+          <li>
+            <button 
               onClick={() => onSectionChange('tools')}
               className={`w-full flex flex-col items-center justify-center px-2 py-3 rounded-lg transition-colors ${
                 activeSection === 'tools' 
                   ? 'bg-blue-600 text-white' 
                   : 'hover:bg-gray-800'
               }`}
-              title="Tools"
+              title="API Tools"
             >
               <Wrench size={24} />
-              <span className="text-xs mt-1">Tools</span>
+              <span className="text-xs mt-1">API</span>
             </button>
           </li>
           <li>
@@ -111,7 +119,6 @@ export default function Sidebar({
         </ul>
       </nav>
 
-      {/* Logout */}
       <div className="p-3 border-t border-gray-700 w-full">
         <button
           onClick={onLogout}
@@ -121,8 +128,6 @@ export default function Sidebar({
           <LogOut size={24} />
         </button>
       </div>
-
-      
     </aside>
   );
 }

@@ -1,3 +1,4 @@
+// app/biz/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,22 +9,21 @@ import Account from './components/Account';
 import Agents from './components/Agents';
 import Chats from './components/Chats';
 import Tools from './components/Tools';
+import CustomTools from './components/CustomTools';
 
 export default function Page() {
-  const [activeSection, setActiveSection] = useState<'dashboard' | 'chats' | 'agents' | 'tools' | 'account'>('dashboard');
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'chats' | 'agents' | 'tools' | 'custom-tools' | 'account'>('dashboard');
   const [userEmail, setUserEmail] = useState<string>('');
   const [userId, setUserId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const supabase = createClient();
 
-  // Fetch user data on component mount
   useEffect(() => {
     async function getUser() {
       const { data: { user }, error } = await supabase.auth.getUser();
       
       if (error || !user) {
-        // If no user, redirect to login
         router.push('/auth');
         return;
       }
@@ -36,7 +36,6 @@ export default function Page() {
     getUser();
   }, [supabase, router]);
 
-  // Handle logout
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/auth');
@@ -50,7 +49,6 @@ export default function Page() {
     );
   }
 
-  // Render content based on active section
   const renderContent = () => {
     switch (activeSection) {
       case 'dashboard':
@@ -63,6 +61,8 @@ export default function Page() {
         return <Chats userId={userId} />;
       case 'agents':
         return <Agents userId={userId} />;
+      case 'custom-tools':
+        return <CustomTools userId={userId} />;
       case 'tools':
         return <Tools userId={userId} />;
       case 'account':
