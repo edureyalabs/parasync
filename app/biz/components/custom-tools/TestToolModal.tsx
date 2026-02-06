@@ -7,7 +7,7 @@ import { CustomTool } from '../CustomTools';
 interface TestToolModalProps {
   tool: CustomTool;
   onClose: () => void;
-  onTestComplete: () => void;
+  onTestComplete: (updatedTool: CustomTool) => void;
 }
 
 export default function TestToolModal({ tool, onClose, onTestComplete }: TestToolModalProps) {
@@ -60,12 +60,16 @@ export default function TestToolModal({ tool, onClose, onTestComplete }: TestToo
 
       setResult(data.result);
       
-      await supabase
+      const { data: updatedTool, error: updateError } = await supabase
         .from('custom_tools')
         .update({ last_tested_at: new Date().toISOString() })
-        .eq('id', tool.id);
+        .eq('id', tool.id)
+        .select()
+        .single();
 
-      onTestComplete();
+      if (!updateError && updatedTool) {
+        onTestComplete(updatedTool);
+      }
     } catch (err: any) {
       setError(err.message || 'Test execution failed');
     } finally {

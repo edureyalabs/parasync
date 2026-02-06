@@ -14,6 +14,9 @@ interface Parameter {
   required: boolean;
 }
 
+const MAX_PARAMETERS = 10;
+const MAX_CHAR_LENGTH = 200;
+
 export default function InputSchemaBuilder({ schema, onChange }: InputSchemaBuilderProps) {
   const [parameters, setParameters] = useState<Parameter[]>(() => {
     const props = schema.properties || {};
@@ -28,6 +31,8 @@ export default function InputSchemaBuilder({ schema, onChange }: InputSchemaBuil
   });
 
   const addParameter = () => {
+    if (parameters.length >= MAX_PARAMETERS) return;
+    
     setParameters([...parameters, {
       name: '',
       type: 'string',
@@ -72,6 +77,8 @@ export default function InputSchemaBuilder({ schema, onChange }: InputSchemaBuil
     });
   };
 
+  const canAddMore = parameters.length < MAX_PARAMETERS;
+
   return (
     <div className="space-y-4">
       <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -86,17 +93,26 @@ export default function InputSchemaBuilder({ schema, onChange }: InputSchemaBuil
 
       <div className="flex items-center justify-between">
         <label className="block text-sm font-semibold text-gray-700">
-          Input Parameters
+          Input Parameters ({parameters.length}/{MAX_PARAMETERS})
         </label>
         <button
           type="button"
           onClick={addParameter}
-          className="text-sm text-purple-600 hover:text-purple-700 flex items-center gap-1 font-medium"
+          disabled={!canAddMore}
+          className="text-sm text-purple-600 hover:text-purple-700 disabled:text-gray-400 disabled:cursor-not-allowed flex items-center gap-1 font-medium"
         >
           <Plus size={16} />
           Add Parameter
         </button>
       </div>
+
+      {!canAddMore && (
+        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-yellow-800 text-sm">
+            Maximum limit of {MAX_PARAMETERS} parameters reached.
+          </p>
+        </div>
+      )}
 
       {parameters.length === 0 ? (
         <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
@@ -120,10 +136,14 @@ export default function InputSchemaBuilder({ schema, onChange }: InputSchemaBuil
                   <input
                     type="text"
                     value={param.name}
-                    onChange={(e) => updateParameter(index, 'name', e.target.value.replace(/[^a-z0-9_]/g, ''))}
+                    onChange={(e) => updateParameter(index, 'name', e.target.value.replace(/[^a-z0-9_]/g, '').slice(0, MAX_CHAR_LENGTH))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm"
                     placeholder="param_name"
+                    maxLength={MAX_CHAR_LENGTH}
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {param.name.length}/{MAX_CHAR_LENGTH}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">
@@ -150,10 +170,14 @@ export default function InputSchemaBuilder({ schema, onChange }: InputSchemaBuil
                 <input
                   type="text"
                   value={param.description}
-                  onChange={(e) => updateParameter(index, 'description', e.target.value)}
+                  onChange={(e) => updateParameter(index, 'description', e.target.value.slice(0, MAX_CHAR_LENGTH))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm"
                   placeholder="Describe this parameter"
+                  maxLength={MAX_CHAR_LENGTH}
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  {param.description.length}/{MAX_CHAR_LENGTH}
+                </p>
               </div>
 
               <div className="flex items-center justify-between">

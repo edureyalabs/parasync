@@ -48,6 +48,10 @@ export default function CustomToolCard({ tool, userId, onDelete, onUpdate }: Cus
     return new Date(dateString).toLocaleDateString();
   };
 
+  const handleTestComplete = (updatedTool: CustomTool) => {
+    onUpdate(updatedTool);
+  };
+
   return (
     <>
       <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden">
@@ -154,9 +158,7 @@ export default function CustomToolCard({ tool, userId, onDelete, onUpdate }: Cus
         <TestToolModal
           tool={tool}
           onClose={() => setShowTestModal(false)}
-          onTestComplete={() => {
-            loadTools();
-          }}
+          onTestComplete={handleTestComplete}
         />
       )}
 
@@ -202,8 +204,4 @@ export default function CustomToolCard({ tool, userId, onDelete, onUpdate }: Cus
       )}
     </>
   );
-}
-
-function loadTools() {
-  window.location.reload();
 }

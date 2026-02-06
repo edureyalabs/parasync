@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
-import { User, Send, Loader, Clock, CheckCircle, XCircle, PlayCircle } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import { User, Send, Loader } from 'lucide-react';
 import MessageBubble from './MessageBubble';
+import TaskWidget from './TaskWidget';
+import AgentStatusIndicator from './AgentStatusIndicator';
 
 interface NetworkAgent {
   network_id: string;
@@ -29,34 +31,30 @@ interface Message {
 interface Task {
   id: string;
   task_name: string;
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  status: 'created' | 'ongoing' | 'submitted' | 'reattempt' | 'completed' | 'failed' | 'cancelled';
+  progress: number;
   tool_name: string;
-  result?: any;
   error_message?: string;
   created_at: string;
-  completed_at?: string;
 }
 
-interface ActiveTask {
-  id: string;
-  name: string;
-  status: string;
-  progress: number;
-  created_at: string;
+interface AgentSession {
+  status: 'sleeping' | 'awake' | 'working' | 'inactive';
+  active_task_count: number;
+  last_activity_at: string;
 }
-
-
 
 export default function MyChats() {
+  const supabase = createClient();
   const [networkAgents, setNetworkAgents] = useState<NetworkAgent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<NetworkAgent | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [activeTasks, setActiveTasks] = useState<Task[]>([]);
+  const [agentSession, setAgentSession] = useState<AgentSession | null>(null);
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [userId, setUserId] = useState<string>('');
-  const [activeTasks, setActiveTasks] = useState<ActiveTask[]>([]);
-  const [allTasks, setAllTasks] = useState<Task[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -68,11 +66,19 @@ export default function MyChats() {
   useEffect(() => {
     if (selectedAgent && userId) {
       fetchMessages();
-      fetchTasks();
-      const unsubscribe = subscribeToMessages();
-      const taskInterval = setInterval(fetchTasks, 5000);
+      fetchAgentSession();
+      fetchActiveTasks();
+      
+      const messageSubscription = subscribeToMessages();
+      const taskSubscription = subscribeToTasks();
+      const sessionSubscription = subscribeToAgentSession();
+      
+      const taskInterval = setInterval(fetchActiveTasks, 5000);
+      
       return () => {
-        unsubscribe();
+        messageSubscription();
+        taskSubscription();
+        sessionSubscription();
         clearInterval(taskInterval);
       };
     }
@@ -124,59 +130,59 @@ export default function MyChats() {
     if (!selectedAgent || !userId) return;
 
     try {
-      const { data: messagesData, error: messagesError } = await supabase
+      const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
         .eq('user_id', userId)
         .eq('agent_id', selectedAgent.agent_id)
         .order('created_at', { ascending: true });
 
-      if (messagesError) throw messagesError;
+      if (error) throw error;
 
-      const formattedMessages: Message[] = messagesData.map((msg: any) => ({
-        id: msg.id,
-        message_text: msg.message_text,
-        sender_type: msg.sender_type,
-        created_at: msg.created_at,
-        status: msg.status,
-        error_message: msg.error_message,
-        metadata: msg.metadata
-      }));
-
-      setMessages(formattedMessages);
+      setMessages(data || []);
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
   };
 
-  const fetchTasks = async () => {
-  if (!selectedAgent || !userId) return;
+  const fetchAgentSession = async () => {
+    if (!selectedAgent || !userId) return;
 
-  try {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('agent_id', selectedAgent.agent_id)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('agent_sessions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('agent_id', selectedAgent.agent_id)
+        .single();
 
-    if (error) throw error;
+      if (error && error.code !== 'PGRST116') throw error;
 
-    const running = data?.filter(t => t.status === 'running') || [];
-    const active = running.map(task => ({
-      id: task.id,
-      name: task.task_name,
-      status: task.status,
-      progress: task.progress,
-      created_at: task.created_at
-    }));
+      setAgentSession(data || { status: 'sleeping', active_task_count: 0, last_activity_at: new Date().toISOString() });
+    } catch (error) {
+      console.error('Error fetching agent session:', error);
+    }
+  };
 
-    setActiveTasks(active);
-    setAllTasks(data || []);
-  } catch (error) {
-    console.error('Error fetching tasks:', error);
-  }
-};
+  const fetchActiveTasks = async () => {
+    if (!selectedAgent || !userId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('agent_id', selectedAgent.agent_id)
+        .in('status', ['created', 'ongoing', 'submitted', 'reattempt'])
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setActiveTasks(data || []);
+    } catch (error) {
+      console.error('Error fetching active tasks:', error);
+    }
+  };
 
   const subscribeToMessages = () => {
     if (!selectedAgent || !userId) return () => {};
@@ -186,46 +192,71 @@ export default function MyChats() {
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'chat_messages',
           filter: `user_id=eq.${userId},agent_id=eq.${selectedAgent.agent_id}`
         },
         (payload) => {
-          const newMessage: Message = {
-            id: payload.new.id,
-            message_text: payload.new.message_text,
-            sender_type: payload.new.sender_type,
-            created_at: payload.new.created_at,
-            status: payload.new.status,
-            error_message: payload.new.error_message,
-            metadata: payload.new.metadata
-          };
-
-          setMessages((prev) => [...prev, newMessage]);
+          if (payload.eventType === 'INSERT') {
+            setMessages((prev) => [...prev, payload.new as Message]);
+          } else if (payload.eventType === 'UPDATE') {
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === payload.new.id ? (payload.new as Message) : msg
+              )
+            );
+          }
         }
       )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
+
+  const subscribeToTasks = () => {
+    if (!selectedAgent || !userId) return () => {};
+
+    const channel = supabase
+      .channel(`tasks:${userId}:${selectedAgent.agent_id}`)
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*',
           schema: 'public',
-          table: 'chat_messages',
+          table: 'tasks',
+          filter: `user_id=eq.${userId},agent_id=eq.${selectedAgent.agent_id}`
+        },
+        () => {
+          fetchActiveTasks();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
+
+  const subscribeToAgentSession = () => {
+    if (!selectedAgent || !userId) return () => {};
+
+    const channel = supabase
+      .channel(`session:${userId}:${selectedAgent.agent_id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'agent_sessions',
           filter: `user_id=eq.${userId},agent_id=eq.${selectedAgent.agent_id}`
         },
         (payload) => {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === payload.new.id
-                ? {
-                    ...msg,
-                    status: payload.new.status,
-                    error_message: payload.new.error_message,
-                    metadata: payload.new.metadata
-                  }
-                : msg
-            )
-          );
+          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+            setAgentSession(payload.new as AgentSession);
+          }
         }
       )
       .subscribe();
@@ -236,47 +267,30 @@ export default function MyChats() {
   };
 
   const handleSendMessage = async () => {
-  if (!inputMessage.trim() || !selectedAgent || !userId || sending) return;
+    if (!inputMessage.trim() || !selectedAgent || !userId || sending) return;
 
-  try {
-    setSending(true);
+    try {
+      setSending(true);
 
-    // Just insert to Supabase with pending status
-    // The database trigger will handle the rest
-    const { data, error } = await supabase
-      .from('chat_messages')
-      .insert({
-        user_id: userId,
-        agent_id: selectedAgent.agent_id,
-        message_text: inputMessage,
-        sender_type: 'user',
-        status: 'pending'
-      })
-      .select()
-      .single();
+      const { error } = await supabase
+        .from('chat_messages')
+        .insert({
+          user_id: userId,
+          agent_id: selectedAgent.agent_id,
+          message_text: inputMessage,
+          sender_type: 'user',
+          status: 'pending'
+        });
 
-    if (error) throw error;
+      if (error) throw error;
 
-    setInputMessage('');
-    
-  } catch (error: any) {
-    console.error('Error sending message:', error);
-    alert(error.message || 'Failed to send message');
-  } finally {
-    setSending(false);
-  }
-};
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'running':
-        return <PlayCircle className="text-blue-500 animate-pulse" size={16} />;
-      case 'completed':
-        return <CheckCircle className="text-green-500" size={16} />;
-      case 'failed':
-        return <XCircle className="text-red-500" size={16} />;
-      default:
-        return <Clock className="text-yellow-500" size={16} />;
+      setInputMessage('');
+      
+    } catch (error: any) {
+      console.error('Error sending message:', error);
+      alert(error.message || 'Failed to send message');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -314,7 +328,7 @@ export default function MyChats() {
                 setSelectedAgent(agent);
                 setMessages([]);
                 setActiveTasks([]);
-                setAllTasks([]);
+                setAgentSession(null);
               }}
               className={`w-full p-4 flex items-center gap-3 hover:bg-gray-50 transition-colors border-b border-gray-100 ${
                 selectedAgent?.agent_id === agent.agent_id ? 'bg-blue-50' : ''
@@ -348,49 +362,43 @@ export default function MyChats() {
       <div className="flex-1 flex flex-col bg-gray-50">
         {selectedAgent ? (
           <>
-            <div className="bg-white border-b border-gray-200 p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white">
-                {selectedAgent.avatar_url ? (
-                  <img 
-                    src={selectedAgent.avatar_url} 
-                    alt={selectedAgent.display_name} 
-                    className="w-full h-full rounded-full object-cover" 
-                  />
-                ) : (
-                  <User size={20} />
-                )}
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">
-                  {selectedAgent.display_name}
-                </h3>
-                <p className="text-sm text-gray-500">
-                  {selectedAgent.role || 'AI Agent'}
-                </p>
-              </div>
-              {activeTasks.length > 0 && (
-                <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
-                  <PlayCircle size={14} className="animate-pulse" />
-                  {activeTasks.length} active task{activeTasks.length !== 1 ? 's' : ''}
+            <div className="bg-white border-b border-gray-200 p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white">
+                  {selectedAgent.avatar_url ? (
+                    <img 
+                      src={selectedAgent.avatar_url} 
+                      alt={selectedAgent.display_name} 
+                      className="w-full h-full rounded-full object-cover" 
+                    />
+                  ) : (
+                    <User size={20} />
+                  )}
                 </div>
-              )}
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900">
+                    {selectedAgent.display_name}
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-gray-500">
+                      {selectedAgent.role || 'AI Agent'}
+                    </p>
+                    {agentSession && (
+                      <>
+                        <span className="text-gray-300">•</span>
+                        <AgentStatusIndicator 
+                          status={agentSession.status} 
+                          activeTaskCount={agentSession.active_task_count}
+                        />
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
             {activeTasks.length > 0 && (
-              <div className="bg-white border-b border-gray-200 p-4">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Active Tasks</h4>
-                <div className="space-y-2">
-                  {activeTasks.map((task) => (
-                    <div key={task.id} className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
-                      {getStatusIcon(task.status)}
-                      <span className="text-sm font-medium text-gray-700 flex-1 truncate">
-                        {task.name}
-                      </span>
-                      <span className="text-xs text-gray-500">{task.progress}%</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <TaskWidget tasks={activeTasks} />
             )}
 
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
