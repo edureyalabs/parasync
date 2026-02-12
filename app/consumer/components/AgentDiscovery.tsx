@@ -12,6 +12,7 @@ interface Agent {
   role: string | null;
   goal: string | null;
   backstory: string | null;
+  bio: string | null;
   is_in_network?: boolean;
 }
 
@@ -99,7 +100,8 @@ export default function AgentDiscovery() {
   const filteredAgents = agents.filter(agent => 
     agent.display_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     agent.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (agent.role && agent.role.toLowerCase().includes(searchQuery.toLowerCase()))
+    (agent.role && agent.role.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (agent.bio && agent.bio.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   if (loading) {
@@ -168,6 +170,11 @@ export default function AgentDiscovery() {
                   <span className="inline-block px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded-full mb-2">
                     {agent.role}
                   </span>
+                )}
+                {agent.bio && (
+                  <p className="text-sm text-gray-600 line-clamp-2 mb-1">
+                    {agent.bio}
+                  </p>
                 )}
                 {agent.goal && (
                   <p className="text-sm text-gray-600 line-clamp-2">

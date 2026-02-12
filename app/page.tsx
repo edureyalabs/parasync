@@ -31,7 +31,7 @@ export default function Home() {
     <div className="flex flex-col h-screen bg-gray-50 overflow-hidden">
       {/* Top Navigation Bar */}
       <nav className="bg-white border-b border-gray-200 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-3">
+        <div className="w-full px-8 py-3">
           <div className="flex items-center justify-between">
             {/* Logo and Brand */}
             <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
@@ -96,7 +96,7 @@ export default function Home() {
 
             {/* Right side - Globe Animation */}
             <div className="flex items-center justify-center">
-              <div className="w-full max-w-[500px] aspect-square">
+              <div className="w-full max-w-[900px] aspect-square">
                 <GlobeAnimation />
               </div>
             </div>

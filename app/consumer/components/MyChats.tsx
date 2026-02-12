@@ -6,6 +6,7 @@ import { User, Send, Loader } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import TaskWidget from './TaskWidget';
 import AgentStatusIndicator from './AgentStatusIndicator';
+import AgentInfoModal from './AgentInfoModal';
 
 interface NetworkAgent {
   network_id: string;
@@ -15,7 +16,9 @@ interface NetworkAgent {
   avatar_url: string | null;
   role: string | null;
   goal: string | null;
+  bio: string | null;
   last_interaction_at: string;
+  profile_id: string;
 }
 
 interface Message {
@@ -44,6 +47,13 @@ interface AgentSession {
   last_activity_at: string;
 }
 
+interface CreatorProfile {
+  username: string;
+  display_name: string;
+  avatar_url: string | null;
+  bio: string | null;
+}
+
 export default function MyChats() {
   const supabase = createClient();
   const [networkAgents, setNetworkAgents] = useState<NetworkAgent[]>([]);
@@ -51,6 +61,8 @@ export default function MyChats() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [activeTasks, setActiveTasks] = useState<Task[]>([]);
   const [agentSession, setAgentSession] = useState<AgentSession | null>(null);
+  const [creatorProfile, setCreatorProfile] = useState<CreatorProfile | null>(null);
+  const [showAgentInfo, setShowAgentInfo] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -68,6 +80,7 @@ export default function MyChats() {
       fetchMessages();
       fetchAgentSession();
       fetchActiveTasks();
+      fetchCreatorProfile();
       
       const messageSubscription = subscribeToMessages();
       const taskSubscription = subscribeToTasks();
@@ -106,23 +119,78 @@ export default function MyChats() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
-        .from('user_network_agents')
-        .select('*')
+      // Fetch network with agent details including profile_id
+      const { data: networkData, error: networkError } = await supabase
+        .from('my_network')
+        .select(`
+          id,
+          user_id,
+          agent_id,
+          added_at,
+          last_interaction_at,
+          is_favorite,
+          is_muted
+        `)
         .eq('user_id', user.id)
         .order('last_interaction_at', { ascending: false });
 
-      if (error) throw error;
+      if (networkError) throw networkError;
 
-      setNetworkAgents(data || []);
+      // Fetch agent details for each network entry
+      const agentIds = networkData?.map(n => n.agent_id) || [];
       
-      if (data && data.length > 0 && !selectedAgent) {
-        setSelectedAgent(data[0]);
+      const { data: agentsData, error: agentsError } = await supabase
+        .from('agents')
+        .select('id, profile_id, username, display_name, avatar_url, role, goal, bio')
+        .in('id', agentIds);
+
+      if (agentsError) throw agentsError;
+
+      // Combine network and agent data
+      const combinedData = networkData?.map(network => {
+        const agent = agentsData?.find(a => a.id === network.agent_id);
+        return {
+          network_id: network.id,
+          agent_id: network.agent_id,
+          username: agent?.username || '',
+          display_name: agent?.display_name || '',
+          avatar_url: agent?.avatar_url || null,
+          role: agent?.role || null,
+          goal: agent?.goal || null,
+          bio: agent?.bio || null,
+          profile_id: agent?.profile_id || '',
+          last_interaction_at: network.last_interaction_at
+        };
+      }) || [];
+
+      setNetworkAgents(combinedData);
+      
+      if (combinedData && combinedData.length > 0 && !selectedAgent) {
+        setSelectedAgent(combinedData[0]);
       }
     } catch (error) {
       console.error('Error fetching network:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCreatorProfile = async () => {
+    if (!selectedAgent) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('username, display_name, avatar_url, bio')
+        .eq('id', selectedAgent.profile_id)
+        .single();
+
+      if (error) throw error;
+
+      setCreatorProfile(data);
+    } catch (error) {
+      console.error('Error fetching creator profile:', error);
+      setCreatorProfile(null);
     }
   };
 
@@ -294,6 +362,10 @@ export default function MyChats() {
     }
   };
 
+  const handleAgentHeaderClick = () => {
+    setShowAgentInfo(true);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -329,6 +401,7 @@ export default function MyChats() {
                 setMessages([]);
                 setActiveTasks([]);
                 setAgentSession(null);
+                setCreatorProfile(null);
               }}
               className={`w-full p-4 flex items-center gap-3 hover:bg-gray-50 transition-colors border-b border-gray-100 ${
                 selectedAgent?.agent_id === agent.agent_id ? 'bg-blue-50' : ''
@@ -362,7 +435,11 @@ export default function MyChats() {
       <div className="flex-1 flex flex-col bg-gray-50">
         {selectedAgent ? (
           <>
-            <div className="bg-white border-b border-gray-200 p-4">
+            {/* Clickable Agent Header */}
+            <div 
+              className="bg-white border-b border-gray-200 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+              onClick={handleAgentHeaderClick}
+            >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white">
                   {selectedAgent.avatar_url ? (
@@ -396,6 +473,20 @@ export default function MyChats() {
                 </div>
               </div>
             </div>
+
+            {/* Agent Info Modal */}
+            <AgentInfoModal
+              isOpen={showAgentInfo}
+              onClose={() => setShowAgentInfo(false)}
+              agentData={{
+                username: selectedAgent.username,
+                display_name: selectedAgent.display_name,
+                avatar_url: selectedAgent.avatar_url,
+                bio: selectedAgent.bio,
+                role: selectedAgent.role
+              }}
+              creatorData={creatorProfile}
+            />
 
             {activeTasks.length > 0 && (
               <TaskWidget tasks={activeTasks} />
