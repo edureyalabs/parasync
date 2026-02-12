@@ -1,10 +1,11 @@
 // app/biz/components/agents/AgentCard.tsx
 import { useState, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Bot, Trash2, Loader2, AlertCircle, Edit2, Upload, Code } from 'lucide-react';
+import { Bot, Trash2, Loader2, AlertCircle, Edit2, Upload, Code, Settings } from 'lucide-react';
 import { Agent } from '../Agents';
 import EditAgentFieldModal from './EditAgentFieldModal';
 import ManageAgentToolsModal from './ManageAgentToolsModal';
+import AgentAccessSettings from './AgentAccessSettings';
 
 interface AgentCardProps {
   agent: Agent;
@@ -24,6 +25,7 @@ export default function AgentCard({ agent, userId, onDelete, onUpdate }: AgentCa
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [editingField, setEditingField] = useState<EditField>(null);
   const [showToolsModal, setShowToolsModal] = useState(false);
+  const [showAccessSettings, setShowAccessSettings] = useState(false);
   const [toolsCount, setToolsCount] = useState(0);
   const [loadingTools, setLoadingTools] = useState(true);
 
@@ -258,7 +260,15 @@ export default function AgentCard({ agent, userId, onDelete, onUpdate }: AgentCa
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-4 border-t border-gray-200">
+          <div className="pt-4 border-t border-gray-200 space-y-2">
+            <button
+              onClick={() => setShowAccessSettings(true)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors font-medium"
+            >
+              <Settings size={18} />
+              Access & Type
+            </button>
+            
             <button
               onClick={() => setShowDeleteConfirm(true)}
               disabled={deleting}
@@ -295,6 +305,15 @@ export default function AgentCard({ agent, userId, onDelete, onUpdate }: AgentCa
             setShowToolsModal(false);
             loadToolsCount(); // Refresh count when modal closes
           }}
+        />
+      )}
+
+      {/* Agent Access Settings Modal */}
+      {showAccessSettings && (
+        <AgentAccessSettings
+          agent={agent}
+          onClose={() => setShowAccessSettings(false)}
+          onUpdate={onUpdate}
         />
       )}
 

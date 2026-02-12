@@ -1,20 +1,21 @@
-// app/biz/components/Sidebar.tsx
 import Image from 'next/image';
-import { LogOut, LayoutDashboard, Bot, User, MessageSquare, Code } from 'lucide-react';
+import { LogOut, LayoutDashboard, Bot, User, MessageSquare, Code, Users } from 'lucide-react';
 import logoImage from './logo.jpg';
 
 interface SidebarProps {
-  activeSection: 'dashboard' | 'chats' | 'agents' | 'custom-tools' | 'account';
-  onSectionChange: (section: 'dashboard' | 'chats' | 'agents' | 'custom-tools' | 'account') => void;
+  activeSection: 'dashboard' | 'chats' | 'agents' | 'custom-tools' | 'access-requests' | 'usage' | 'account';
+  onSectionChange: (section: 'dashboard' | 'chats' | 'agents' | 'custom-tools' | 'access-requests' | 'usage' | 'account') => void;
   userEmail: string;
   onLogout: () => void;
+  pendingCount?: number;
 }
 
 export default function Sidebar({ 
   activeSection, 
   onSectionChange, 
   userEmail,
-  onLogout 
+  onLogout,
+  pendingCount = 0
 }: SidebarProps) {
   return (
     <aside className="w-20 bg-black text-white flex flex-col h-full items-center">
@@ -86,6 +87,37 @@ export default function Sidebar({
             >
               <Code size={24} />
               <span className="text-xs mt-1">Tools</span>
+            </button>
+          </li>
+          <li>
+            <button 
+              onClick={() => onSectionChange('access-requests')}
+              className={`w-full flex flex-col items-center justify-center px-2 py-3 rounded-lg transition-colors relative ${
+                activeSection === 'access-requests' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'hover:bg-gray-800'
+              }`}
+              title="Access Requests"
+            >
+              <Users size={24} />
+              <span className="text-xs mt-1">Requests</span>
+              {pendingCount > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              )}
+            </button>
+          </li>
+          <li>
+            <button 
+              onClick={() => onSectionChange('usage')}
+              className={`w-full flex flex-col items-center justify-center px-2 py-3 rounded-lg transition-colors ${
+                activeSection === 'usage' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'hover:bg-gray-800'
+              }`}
+              title="Usage & Revenue"
+            >
+              <LayoutDashboard size={24} />
+              <span className="text-xs mt-1">Usage</span>
             </button>
           </li>
           <li>
