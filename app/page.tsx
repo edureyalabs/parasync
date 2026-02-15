@@ -33,21 +33,21 @@ export default function Home() {
       <nav className="bg-white border-b border-gray-50 z-50 shadow-sm">
         <div className="w-full px-8 py-3">
           <div className="flex items-center justify-between">
-          {/* Logo and Brand */}
-          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 rounded-full border-0 border-black flex items-center justify-center p-1">
-              <Image
-                src="/logo.png"
-                alt="Parasync Logo"
-                width={40}
-                height={40}
-                className="object-cover"
-              />
-            </div>
-            <div className="relative">
-              <span className="text-3xl font-bold text-gray-900">Parasync</span>
-            </div>
-          </Link>
+            {/* Logo and Brand */}
+            <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <div className="w-10 h-10 rounded-full border-0 border-black flex items-center justify-center p-1">
+                <Image
+                  src="/logo.png"
+                  alt="Parasync Logo"
+                  width={40}
+                  height={40}
+                  className="object-cover"
+                />
+              </div>
+              <div className="relative">
+                <span className="text-3xl font-bold text-gray-900">Parasync</span>
+              </div>
+            </Link>
 
             {/* Right Navigation */}
             <div className="flex items-center gap-4">
@@ -116,6 +116,10 @@ export default function Home() {
                 About Us
               </Link>
               <span className="text-gray-300">|</span>
+              <Link href="/pricing" className="text-gray-600 hover:text-gray-900 transition-colors">
+                Pricing & Revenue
+              </Link>
+              <span className="text-gray-300">|</span>
               <Link href="/privacy" className="text-gray-600 hover:text-gray-900 transition-colors">
                 Privacy Policy
               </Link>
@@ -129,7 +133,6 @@ export default function Home() {
             <div className="text-xs text-gray-500">
               © 2026 Parasync - Get Things Done 
             </div>
-            {/* <div className="text-xs text-gray-500">Get Things Done.</div> */}
           </div>
         </div>
       </footer>

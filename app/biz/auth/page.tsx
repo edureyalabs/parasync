@@ -35,7 +35,7 @@ function AuthContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <motion.div
           animate={{ 
             scale: [1, 1.2, 1],
@@ -48,7 +48,7 @@ function AuthContent() {
           }}
         >
           <Image 
-            src="/logo.jpg" 
+            src="/logo.png" 
             alt="Parasync" 
             width={60} 
             height={60}
@@ -59,10 +59,10 @@ function AuthContent() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Subtle Grid Background */}
-      <div className="fixed inset-0 bg-black">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1a1a1a_1px,transparent_1px),linear-gradient(to_bottom,#1a1a1a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
+    <div className="min-h-screen bg-gray-50">
+      {/* Subtle Background Pattern */}
+      <div className="fixed inset-0 bg-gray-50">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
       </div>
 
     {/* Back to Home Link */}
@@ -90,7 +90,7 @@ function AuthContent() {
           }
           window.location.href = url;
         }}
-        className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors cursor-pointer"
+        className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to home
@@ -114,11 +114,11 @@ function AuthContent() {
               className="mb-2 flex justify-center"
             >
               <Image 
-                src="/logo.jpg" 
+                src="/logo.png" 
                 alt="Parasync" 
                 width={40} 
                 height={40}
-                className="drop-shadow-2xl"
+                className="drop-shadow-lg"
               />
             </motion.div>
 
@@ -127,23 +127,23 @@ function AuthContent() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.5 }}
             >
-              <h1 className="text-2xl font-bold mb-1">
+              <h1 className="text-2xl font-bold mb-1 text-gray-900">
                 Welcome to Parasync
               </h1>
-              <p className="text-gray-400 text-xs">
+              <p className="text-gray-600 text-xs">
                 Your Agentic World
               </p>
             </motion.div>
 
-            {/* Trial Badge */}
+            {/* Platform Badge */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.4, duration: 0.5 }}
-              className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-full text-xs"
+              className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full text-xs"
             >
-              <Sparkles className="w-3 h-3 text-purple-400" />
-              <span className="text-purple-400 font-semibold">Agentic Commerce Platform</span>
+              <Sparkles className="w-3 h-3 text-blue-600" />
+              <span className="text-blue-600 font-semibold">Agentic Commerce Platform</span>
             </motion.div>
           </div>
 
@@ -152,7 +152,7 @@ function AuthContent() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.5 }}
-            className="bg-black/40 backdrop-blur-sm border border-gray-800 rounded-xl p-6"
+            className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg"
           >
             <Auth
               supabaseClient={supabase}
@@ -161,15 +161,15 @@ function AuthContent() {
                 variables: {
                   default: {
                     colors: {
-                      brand: '#9333ea',
-                      brandAccent: '#a855f7',
-                      inputBackground: 'rgba(0, 0, 0, 0.3)',
-                      inputBorder: 'rgba(75, 85, 99, 1)',
+                      brand: '#2563eb',
+                      brandAccent: '#1d4ed8',
+                      inputBackground: 'white',
+                      inputBorder: 'rgba(209, 213, 219, 1)',
                       inputBorderHover: 'rgba(156, 163, 175, 1)',
-                      inputBorderFocus: 'rgba(147, 51, 234, 1)',
-                      inputText: 'white',
-                      inputLabelText: 'rgba(209, 213, 219, 1)',
-                      inputPlaceholder: 'rgba(107, 114, 128, 1)',
+                      inputBorderFocus: 'rgba(37, 99, 235, 1)',
+                      inputText: 'rgba(17, 24, 39, 1)',
+                      inputLabelText: 'rgba(55, 65, 81, 1)',
+                      inputPlaceholder: 'rgba(156, 163, 175, 1)',
                     },
                     space: {
                       spaceSmall: '6px',
@@ -194,24 +194,24 @@ function AuthContent() {
                   button: 'auth-button',
                   input: 'auth-input',
                   label: 'auth-label',
-                  anchor: 'text-purple-400 hover:text-purple-300 transition-colors',
+                  anchor: 'text-blue-600 hover:text-blue-700 transition-colors',
                 },
               }}
               providers={[]}
               view="sign_in"
               showLinks={true}
-              theme="dark"
+              theme="light"
             />
 
             {/* Additional Info */}
-            <div className="mt-4 pt-4 border-t border-gray-800">
+            <div className="mt-4 pt-4 border-t border-gray-200">
               <p className="text-[10px] text-center text-gray-500 leading-relaxed">
                 By signing up, you agree to our{' '}
-                <Link href="/terms" className="text-purple-400 hover:text-purple-300 transition-colors">
+                <Link href="/terms" className="text-blue-600 hover:text-blue-700 transition-colors">
                   Terms of Service
                 </Link>{' '}
                 and{' '}
-                <Link href="/privacy-policy" className="text-purple-400 hover:text-purple-300 transition-colors">
+                <Link href="/privacy-policy" className="text-blue-600 hover:text-blue-700 transition-colors">
                   Privacy Policy
                 </Link>
               </p>
@@ -227,20 +227,20 @@ function AuthContent() {
         }
         
         .auth-button {
-          background: white !important;
-          color: black !important;
+          background: #2563eb !important;
+          color: white !important;
           font-weight: 600 !important;
           transition: all 0.2s !important;
         }
         
         .auth-button:hover {
-          background: rgba(229, 229, 229, 1) !important;
+          background: #1d4ed8 !important;
         }
         
         .auth-input {
-          background: rgba(0, 0, 0, 0.3) !important;
-          border: 1px solid rgba(75, 85, 99, 1) !important;
-          color: white !important;
+          background: white !important;
+          border: 1px solid rgba(209, 213, 219, 1) !important;
+          color: rgba(17, 24, 39, 1) !important;
         }
         
         .auth-input:hover {
@@ -248,12 +248,12 @@ function AuthContent() {
         }
         
         .auth-input:focus {
-          border-color: rgba(147, 51, 234, 1) !important;
-          box-shadow: 0 0 0 1px rgba(147, 51, 234, 0.5) !important;
+          border-color: rgba(37, 99, 235, 1) !important;
+          box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.5) !important;
         }
         
         .auth-label {
-          color: rgba(209, 213, 219, 1) !important;
+          color: rgba(55, 65, 81, 1) !important;
           font-weight: 500 !important;
         }
       `}</style>
@@ -264,7 +264,7 @@ function AuthContent() {
 export default function AuthPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-black">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <motion.div
           animate={{ 
             scale: [1, 1.2, 1],
@@ -277,7 +277,7 @@ export default function AuthPage() {
           }}
         >
           <Image 
-            src="/logo.jpg" 
+            src="/logo.png" 
             alt="Parasync" 
             width={60} 
             height={60}
