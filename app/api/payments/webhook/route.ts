@@ -2,11 +2,6 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { fetchPaymentDetails } from '@/lib/razorpay';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 /**
  * POST /api/payments/webhook
  * Handles Razorpay webhook events (payment.captured, payment.failed, etc.)
@@ -63,6 +58,16 @@ export async function POST(request: Request) {
  */
 async function handlePaymentCaptured(event: any) {
   try {
+    // Create Supabase client inside the function
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Missing Supabase environment variables');
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     const payment = event.payload.payment.entity;
     const orderId = payment.order_id;
     const paymentId = payment.id;
@@ -126,6 +131,16 @@ async function handlePaymentCaptured(event: any) {
  */
 async function handlePaymentFailed(event: any) {
   try {
+    // Create Supabase client inside the function
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Missing Supabase environment variables');
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     const payment = event.payload.payment.entity;
     const orderId = payment.order_id;
     const paymentId = payment.id;

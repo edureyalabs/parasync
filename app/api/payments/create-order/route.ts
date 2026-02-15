@@ -3,11 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 import { createRazorpayOrder } from '@/lib/razorpay';
 import { detectCountry } from '@/lib/geo';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 /**
  * POST /api/payments/create-order
  * Creates a new Razorpay payment order
@@ -20,6 +15,20 @@ const supabase = createClient(
  */
 export async function POST(request: Request) {
   try {
+    // Create Supabase client inside the function
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase environment variables');
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     const { amountUSD, userId } = await request.json();
 
     // Validation
