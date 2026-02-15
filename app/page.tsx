@@ -30,22 +30,24 @@ export default function Home() {
   return (
     <div className="flex flex-col h-screen bg-gray-50 overflow-hidden">
       {/* Top Navigation Bar */}
-      <nav className="bg-white border-b border-gray-200 z-50 shadow-sm">
+      <nav className="bg-white border-b border-gray-50 z-50 shadow-sm">
         <div className="w-full px-8 py-3">
           <div className="flex items-center justify-between">
-            {/* Logo and Brand */}
-            <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <div className="w-10 h-10 rounded-full overflow-hidden bg-white flex items-center justify-center">
-                <Image
-                  src="/logo.png"
-                  alt="Parasync Logo"
-                  width={40}
-                  height={40}
-                  className="object-cover"
-                />
-              </div>
+          {/* Logo and Brand */}
+          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <div className="w-10 h-10 rounded-full border-0 border-black flex items-center justify-center p-1">
+              <Image
+                src="/logo.png"
+                alt="Parasync Logo"
+                width={40}
+                height={40}
+                className="object-cover"
+              />
+            </div>
+            <div className="relative">
               <span className="text-3xl font-bold text-gray-900">Parasync</span>
-            </Link>
+            </div>
+          </Link>
 
             {/* Right Navigation */}
             <div className="flex items-center gap-4">
@@ -87,7 +89,7 @@ export default function Home() {
               <div>
                 <button
                   onClick={() => handleAuthRedirect('app')}
-                  className="px-10 py-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl text-lg"
+                  className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl text-base"
                 >
                   Login / Signup
                 </button>
@@ -105,7 +107,7 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 py-4">
+      <footer className="bg-gray-50 py-4">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col items-center space-y-2">
             {/* Footer Links */}
@@ -125,8 +127,9 @@ export default function Home() {
 
             {/* Copyright */}
             <div className="text-xs text-gray-500">
-              © 2026 Parasync Technologies. All Rights Reserved
+              © 2026 Parasync - Get Things Done 
             </div>
+            {/* <div className="text-xs text-gray-500">Get Things Done.</div> */}
           </div>
         </div>
       </footer>
