@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, Sparkles } from 'lucide-react';
+import logoImage from '../components/logo.png';
 
 function AuthContent() {
   const router = useRouter();
@@ -48,7 +49,7 @@ function AuthContent() {
           }}
         >
           <Image 
-            src="/logo.png" 
+            src={logoImage}
             alt="Parasync" 
             width={60} 
             height={60}
@@ -114,7 +115,7 @@ function AuthContent() {
               className="mb-2 flex justify-center"
             >
               <Image 
-                src="/logo.png" 
+                src={logoImage}
                 alt="Parasync" 
                 width={40} 
                 height={40}
@@ -277,7 +278,7 @@ export default function AuthPage() {
           }}
         >
           <Image 
-            src="/logo.png" 
+            src={logoImage}
             alt="Parasync" 
             width={60} 
             height={60}

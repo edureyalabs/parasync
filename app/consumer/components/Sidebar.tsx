@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import { LogOut, MessageSquare, Compass, UserCircle } from 'lucide-react';
-import logoImage from './logo.jpg';
+import logoImage from './logo.png';
 
 interface SidebarProps {
   activeSection: 'chats' | 'agents' | 'account';
