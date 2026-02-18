@@ -14,6 +14,26 @@ function AuthContent() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
 
+  // Helper function to get main domain URL
+  const getMainDomainUrl = (path = '') => {
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    const port = window.location.port;
+    
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      // LOCAL: app.localhost:3000 → localhost:3000
+      return `${protocol}//localhost${port ? `:${port}` : ''}${path}`;
+    } else if (hostname.includes('localhost')) {
+      // LOCAL with subdomain: app.localhost:3000 → localhost:3000
+      return `${protocol}//localhost${port ? `:${port}` : ''}${path}`;
+    } else {
+      // PRODUCTION: app.parasync.com → parasync.com
+      const parts = hostname.split('.');
+      const rootDomain = parts.length > 2 ? parts.slice(-2).join('.') : hostname;
+      return `${protocol}//${rootDomain}${path}`;
+    }
+  };
+
   useEffect(() => {
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -72,24 +92,7 @@ function AuthContent() {
         href="/"
         onClick={(e) => {
           e.preventDefault();
-          const protocol = window.location.protocol;
-          const hostname = window.location.hostname;
-          const port = window.location.port;
-          
-          let url;
-          if (hostname === 'localhost' || hostname === '127.0.0.1') {
-            // LOCAL: app.localhost:3000 → localhost:3000
-            url = `${protocol}//localhost${port ? `:${port}` : ''}/`;
-          } else if (hostname.includes('localhost')) {
-            // LOCAL with subdomain: app.localhost:3000 → localhost:3000
-            url = `${protocol}//localhost${port ? `:${port}` : ''}/`;
-          } else {
-            // PRODUCTION: app.parasync.com → parasync.com
-            const parts = hostname.split('.');
-            const rootDomain = parts.length > 2 ? parts.slice(-2).join('.') : hostname;
-            url = `${protocol}//${rootDomain}/`;
-          }
-          window.location.href = url;
+          window.location.href = getMainDomainUrl('/');
         }}
         className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
       >
@@ -208,13 +211,27 @@ function AuthContent() {
             <div className="mt-4 pt-4 border-t border-gray-200">
               <p className="text-[10px] text-center text-gray-500 leading-relaxed">
                 By signing up, you agree to our{' '}
-                <Link href="/terms" className="text-blue-600 hover:text-blue-700 transition-colors">
-                  Terms of Service
-                </Link>{' '}
+                <a 
+                  href="/terms"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = getMainDomainUrl('/terms');
+                  }}
+                  className="text-blue-600 hover:text-blue-700 transition-colors cursor-pointer"
+                >
+                  Terms of Use
+                </a>{' '}
                 and{' '}
-                <Link href="/privacy-policy" className="text-blue-600 hover:text-blue-700 transition-colors">
+                <a 
+                  href="/privacy"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = getMainDomainUrl('/privacy');
+                  }}
+                  className="text-blue-600 hover:text-blue-700 transition-colors cursor-pointer"
+                >
                   Privacy Policy
-                </Link>
+                </a>
               </p>
             </div>
           </motion.div>
