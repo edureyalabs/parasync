@@ -48,7 +48,7 @@ const S = {
     width: '100%', maxWidth: '380px',
   } as React.CSSProperties,
   eyebrow: {
-    fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: '#aaa',
+    fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: '#777',
     letterSpacing: '0.07em', marginBottom: '0.6rem', textTransform: 'uppercase' as const,
   },
   h1: {
@@ -56,7 +56,7 @@ const S = {
     margin: '0 0 0.4rem', lineHeight: 1.2, color: '#111',
   } as React.CSSProperties,
   subtitle: {
-    fontSize: '0.85rem', color: '#888', fontWeight: 300, margin: '0 0 2rem', lineHeight: 1.6,
+    fontSize: '0.85rem', color: '#666', fontWeight: 300, margin: '0 0 2rem', lineHeight: 1.6,
   } as React.CSSProperties,
   box: {
     background: '#fff', border: '1px solid #e3e1dc',
@@ -84,7 +84,7 @@ const S = {
     margin: 0, lineHeight: 1.5,
   } as React.CSSProperties,
   footer: {
-    marginTop: '1.25rem', fontSize: '0.75rem', color: '#bbb',
+    marginTop: '1.25rem', fontSize: '0.75rem', color: '#888',
     textAlign: 'center' as const, fontWeight: 300, lineHeight: 1.6,
   },
 };
@@ -318,8 +318,8 @@ function AuthContent() {
 
           <p style={S.footer}>
             By continuing, you agree to our{' '}
-            <Link href="/terms" style={{ color: '#888' }}>Terms</Link>{' '}and{' '}
-            <Link href="/privacy" style={{ color: '#888' }}>Privacy Policy</Link>
+            <Link href="/terms" style={{ color: '#666' }}>Terms</Link>{' '}and{' '}
+            <Link href="/privacy" style={{ color: '#666' }}>Privacy Policy</Link>
           </p>
         </div>
       </div>

@@ -65,7 +65,7 @@ export default function DashboardPage() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           {user?.email && (
-            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: '#aaa' }}>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: '#777' }}>
               {user.email}
             </span>
           )}
@@ -89,13 +89,13 @@ export default function DashboardPage() {
 
         {/* Welcome */}
         <div style={{ marginBottom: '3rem' }}>
-          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: '#aaa', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: '#777', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
             Dashboard
           </p>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 500, letterSpacing: '-0.03em', margin: '0 0 0.4rem', color: '#111' }}>
             Welcome back{user?.email ? `, ${user.email.split('@')[0]}` : ''}.
           </h1>
-          <p style={{ fontSize: '0.875rem', color: '#888', fontWeight: 300, margin: 0, lineHeight: 1.6 }}>
+          <p style={{ fontSize: '0.875rem', color: '#666', fontWeight: 300, margin: 0, lineHeight: 1.6 }}>
             Your agents are ready. This is your Parasync workspace.
           </p>
         </div>
@@ -108,26 +108,26 @@ export default function DashboardPage() {
             { label: 'Saved workflows', value: '—', note: 'None created' },
           ].map((card) => (
             <div key={card.label} style={{ background: '#fff', border: '1px solid #e3e1dc', borderRadius: 6, padding: '1.5rem' }}>
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: '#aaa', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 0.6rem' }}>
+              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: '#777', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 0.6rem' }}>
                 {card.label}
               </p>
               <p style={{ fontSize: '1.5rem', fontWeight: 500, letterSpacing: '-0.02em', color: '#111', margin: '0 0 0.25rem' }}>
                 {card.value}
               </p>
-              <p style={{ fontSize: '0.78rem', color: '#bbb', margin: 0 }}>{card.note}</p>
+              <p style={{ fontSize: '0.78rem', color: '#888', margin: 0 }}>{card.note}</p>
             </div>
           ))}
         </div>
 
         {/* Empty state */}
         <div style={{ background: '#fff', border: '1px dashed #ddd', borderRadius: 6, padding: '3rem 2rem', textAlign: 'center' }}>
-          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: '#ccc', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: '#999', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
             Coming soon
           </p>
           <h2 style={{ fontSize: '1.1rem', fontWeight: 500, letterSpacing: '-0.02em', color: '#999', margin: '0 0 0.5rem' }}>
             Your workspace is empty.
           </h2>
-          <p style={{ fontSize: '0.85rem', color: '#bbb', fontWeight: 300, margin: '0 auto', lineHeight: 1.6, maxWidth: 340 }}>
+          <p style={{ fontSize: '0.85rem', color: '#888', fontWeight: 300, margin: '0 auto', lineHeight: 1.6, maxWidth: 340 }}>
             Agent orchestration and workflow creation are being built. You&apos;ll be among the first to access them.
           </p>
         </div>

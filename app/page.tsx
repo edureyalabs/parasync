@@ -42,7 +42,7 @@ export default function Home() {
       {/* Hero */}
       <main className="flex flex-1 flex-col items-center justify-center text-center px-6" style={{ paddingTop: '7rem', paddingBottom: '7rem' }}>
         <p style={{
-          fontFamily: "'DM Mono', monospace", fontSize: '0.72rem', color: '#aaa',
+          fontFamily: "'DM Mono', monospace", fontSize: '0.72rem', color: '#777',
           letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '1.5rem',
         }}>
           Early access · Agents for everyone
@@ -82,10 +82,10 @@ export default function Home() {
 
       {/* Footer */}
       <footer style={{ borderTop: '1px solid #e8e6e1', padding: '1.25rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.72rem', color: '#bbb' }}>© 2025 Parasync</span>
-        <div className="flex gap-6" style={{ fontSize: '0.75rem', color: '#bbb' }}>
-          <a href="/terms" style={{ color: '#bbb', textDecoration: 'none' }}>Terms</a>
-          <a href="/privacy" style={{ color: '#bbb', textDecoration: 'none' }}>Privacy</a>
+        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.72rem', color: '#888' }}>© 2025 Parasync</span>
+        <div className="flex gap-6" style={{ fontSize: '0.75rem', color: '#888' }}>
+          <a href="/terms" style={{ color: '#888', textDecoration: 'none' }}>Terms</a>
+          <a href="/privacy" style={{ color: '#888', textDecoration: 'none' }}>Privacy</a>
         </div>
       </footer>
     </div>
