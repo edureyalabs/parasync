@@ -63,7 +63,6 @@ function CreateOrgModal({ onClose, onCreated, userId }: CreateOrgModalProps) {
 
   useEffect(() => {
     nameRef.current?.focus();
-    // Trap scroll
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
   }, []);
@@ -132,7 +131,7 @@ function CreateOrgModal({ onClose, onCreated, userId }: CreateOrgModalProps) {
           box-sizing: border-box;
         }
         .org-input:focus { border-color: #111; }
-        .org-input::placeholder { color: #aaa; }
+        .org-input::placeholder { color: #888; }
       `}</style>
 
       <div style={{
@@ -148,7 +147,7 @@ function CreateOrgModal({ onClose, onCreated, userId }: CreateOrgModalProps) {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.75rem' }}>
           <div>
-            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.68rem', color: '#888', letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 0.35rem' }}>
+            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.68rem', color: '#555', letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 0.35rem' }}>
               New organization
             </p>
             <h2 style={{ fontSize: '1.15rem', fontWeight: 500, letterSpacing: '-0.025em', color: '#111', margin: 0 }}>
@@ -157,7 +156,7 @@ function CreateOrgModal({ onClose, onCreated, userId }: CreateOrgModalProps) {
           </div>
           <button
             onClick={onClose}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', padding: '2px', lineHeight: 1, marginLeft: '1rem', flexShrink: 0 }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666', padding: '2px', lineHeight: 1, marginLeft: '1rem', flexShrink: 0 }}
             aria-label="Close"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -169,7 +168,7 @@ function CreateOrgModal({ onClose, onCreated, userId }: CreateOrgModalProps) {
         {/* Fields */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
           <div>
-            <label style={{ display: 'block', fontFamily: "'DM Mono', monospace", fontSize: '0.68rem', color: '#555', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+            <label style={{ display: 'block', fontFamily: "'DM Mono', monospace", fontSize: '0.68rem', color: '#333', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
               Name <span style={{ color: '#e55' }}>*</span>
             </label>
             <input
@@ -185,8 +184,8 @@ function CreateOrgModal({ onClose, onCreated, userId }: CreateOrgModalProps) {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontFamily: "'DM Mono', monospace", fontSize: '0.68rem', color: '#555', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
-              Description <span style={{ color: '#aaa', fontFamily: "'DM Sans', sans-serif", textTransform: 'none', letterSpacing: 0, fontSize: '0.7rem' }}>optional</span>
+            <label style={{ display: 'block', fontFamily: "'DM Mono', monospace", fontSize: '0.68rem', color: '#333', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+              Description <span style={{ color: '#777', fontFamily: "'DM Sans', sans-serif", textTransform: 'none', letterSpacing: 0, fontSize: '0.7rem' }}>optional</span>
             </label>
             <textarea
               className="org-input"
@@ -197,7 +196,7 @@ function CreateOrgModal({ onClose, onCreated, userId }: CreateOrgModalProps) {
               rows={3}
               style={{ resize: 'none', lineHeight: 1.6 }}
             />
-            <p style={{ fontSize: '0.72rem', color: '#bbb', margin: '0.3rem 0 0', textAlign: 'right', fontFamily: "'DM Mono', monospace" }}>
+            <p style={{ fontSize: '0.72rem', color: '#777', margin: '0.3rem 0 0', textAlign: 'right', fontFamily: "'DM Mono', monospace" }}>
               {description.length}/200
             </p>
           </div>
@@ -215,7 +214,7 @@ function CreateOrgModal({ onClose, onCreated, userId }: CreateOrgModalProps) {
           <button
             onClick={onClose}
             style={{
-              background: 'none', border: '1px solid #ddd', color: '#555',
+              background: 'none', border: '1px solid #ccc', color: '#333',
               padding: '0.55rem 1.1rem', fontSize: '0.825rem',
               fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', borderRadius: 4,
             }}
@@ -251,6 +250,7 @@ function CreateOrgModal({ onClose, onCreated, userId }: CreateOrgModalProps) {
 // ─── Org Card ─────────────────────────────────────────────────────────────────
 
 function OrgCard({ org }: { org: Organization }) {
+  const router = useRouter();
   const initials = org.name
     .split(' ')
     .slice(0, 2)
@@ -262,7 +262,9 @@ function OrgCard({ org }: { org: Organization }) {
   });
 
   return (
-    <div style={{
+    <div
+      onClick={() => router.push(`/console`)}
+      style={{
       background: '#fff',
       border: '1px solid #e3e1dc',
       borderRadius: 6,
@@ -297,7 +299,8 @@ function OrgCard({ org }: { org: Organization }) {
           <p style={{ fontSize: '0.9rem', fontWeight: 500, color: '#111', margin: 0, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {org.name}
           </p>
-          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.68rem', color: '#aaa', margin: 0, marginTop: 2 }}>
+          {/* Darkened: was #aaa, now #666 */}
+          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.68rem', color: '#555', margin: 0, marginTop: 2 }}>
             Created {createdDate}
           </p>
         </div>
@@ -305,19 +308,21 @@ function OrgCard({ org }: { org: Organization }) {
 
       {/* Description */}
       {org.description ? (
-        <p style={{ fontSize: '0.82rem', color: '#666', fontWeight: 300, margin: 0, lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        <p style={{ fontSize: '0.82rem', color: '#444', fontWeight: 300, margin: 0, lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
           {org.description}
         </p>
       ) : (
-        <p style={{ fontSize: '0.82rem', color: '#bbb', margin: 0, fontStyle: 'italic' }}>No description</p>
+        /* Darkened: was #bbb, now #777 */
+        <p style={{ fontSize: '0.82rem', color: '#777', margin: 0, fontStyle: 'italic' }}>No description</p>
       )}
 
       {/* Footer */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '0.5rem', borderTop: '1px solid #f0eeea' }}>
-        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.67rem', color: '#aaa', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '0.5rem', borderTop: '1px solid #e8e6e1' }}>
+        {/* Darkened: was #aaa, now #555 */}
+        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.67rem', color: '#444', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
           Owner
         </span>
-        <span style={{ fontSize: '0.75rem', color: '#555', background: '#f5f4f1', padding: '0.2rem 0.55rem', borderRadius: 3 }}>
+        <span style={{ fontSize: '0.75rem', color: '#333', background: '#eceae6', padding: '0.2rem 0.55rem', borderRadius: 3 }}>
           Open →
         </span>
       </div>
@@ -334,7 +339,7 @@ function CreateOrgSlot({ onClick, disabled }: { onClick: () => void; disabled: b
       disabled={disabled}
       style={{
         background: 'none',
-        border: '1.5px dashed #ddd',
+        border: '1.5px dashed #ccc',
         borderRadius: 6,
         padding: '1.5rem',
         cursor: disabled ? 'not-allowed' : 'pointer',
@@ -342,25 +347,27 @@ function CreateOrgSlot({ onClick, disabled }: { onClick: () => void; disabled: b
         display: 'flex',
         flexDirection: 'column',
         gap: '0.5rem',
-        opacity: disabled ? 0.4 : 1,
+        opacity: disabled ? 0.65 : 1,
         transition: 'border-color 0.15s',
         width: '100%',
       }}
-      onMouseEnter={e => { if (!disabled) (e.currentTarget as HTMLButtonElement).style.borderColor = '#aaa'; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#ddd'; }}
+      onMouseEnter={e => { if (!disabled) (e.currentTarget as HTMLButtonElement).style.borderColor = '#999'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#ccc'; }}
     >
       <div style={{
-        width: 32, height: 32, borderRadius: 6, border: '1.5px dashed #ccc',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa',
+        width: 32, height: 32, borderRadius: 6, border: '1.5px dashed #bbb',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#777',
       }}>
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
       </div>
-      <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#666', margin: 0, letterSpacing: '-0.01em' }}>
+      {/* Darkened: was #666, now #333 */}
+      <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#333', margin: 0, letterSpacing: '-0.01em' }}>
         New organization
       </p>
-      <p style={{ fontSize: '0.78rem', color: '#aaa', fontWeight: 300, margin: 0, lineHeight: 1.5 }}>
+      {/* Darkened: was #aaa, now #666 */}
+      <p style={{ fontSize: '0.78rem', color: '#555', fontWeight: 300, margin: 0, lineHeight: 1.5 }}>
         {disabled ? 'Limit of 2 organizations reached.' : 'Create a shared workspace for your team.'}
       </p>
     </button>
@@ -444,7 +451,7 @@ export default function DashboardPage() {
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           {user?.email && (
-            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: '#777' }}>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: '#555' }}>
               {user.email}
             </span>
           )}
@@ -452,7 +459,7 @@ export default function DashboardPage() {
             onClick={handleSignOut}
             disabled={signingOut}
             style={{
-              background: 'none', border: '1px solid #ddd', color: '#555',
+              background: 'none', border: '1px solid #ddd', color: '#333',
               padding: '0.4rem 0.9rem', fontSize: '0.8rem', fontFamily: "'DM Sans', sans-serif",
               cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', gap: '0.4rem',
             }}
@@ -465,15 +472,12 @@ export default function DashboardPage() {
       {/* Main */}
       <main style={{ maxWidth: 900, margin: '0 auto', padding: '3rem 2rem', animation: 'fadeUp 0.4s ease both' }}>
 
-        {/* Welcome */}
+        {/* Welcome — "Dashboard" label removed */}
         <div style={{ marginBottom: '3rem' }}>
-          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: '#777', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-            Dashboard
-          </p>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 500, letterSpacing: '-0.03em', margin: '0 0 0.4rem', color: '#111' }}>
             Welcome back{firstName ? `, ${firstName}` : ''}.
           </h1>
-          <p style={{ fontSize: '0.875rem', color: '#666', fontWeight: 300, margin: 0, lineHeight: 1.6 }}>
+          <p style={{ fontSize: '0.875rem', color: '#555', fontWeight: 300, margin: 0, lineHeight: 1.6 }}>
             Manage your organizations and agent workflows from here.
           </p>
         </div>
@@ -482,10 +486,10 @@ export default function DashboardPage() {
         <div style={{ marginBottom: '3rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
             <div>
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: '#777', letterSpacing: '0.07em', textTransform: 'uppercase', margin: '0 0 0.2rem' }}>
+              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: '#444', letterSpacing: '0.07em', textTransform: 'uppercase', margin: '0 0 0.2rem' }}>
                 Organizations
               </p>
-              <p style={{ fontSize: '0.78rem', color: '#aaa', margin: 0, fontFamily: "'DM Mono', monospace" }}>
+              <p style={{ fontSize: '0.78rem', color: '#666', margin: 0, fontFamily: "'DM Mono', monospace" }}>
                 {orgs.length} / {MAX_ORGS} used
               </p>
             </div>
@@ -510,8 +514,8 @@ export default function DashboardPage() {
 
           {/* Org grid */}
           {orgsLoading ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3rem', gap: '0.75rem', color: '#aaa', fontSize: '0.8rem' }}>
-              <Spinner size={16} color="#aaa" />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3rem', gap: '0.75rem', color: '#666', fontSize: '0.8rem' }}>
+              <Spinner size={16} color="#666" />
               Loading organizations…
             </div>
           ) : (
@@ -519,34 +523,9 @@ export default function DashboardPage() {
               {orgs.map(org => (
                 <OrgCard key={org.id} org={org} />
               ))}
-              {/* Always show a create slot; disabled if at limit */}
               <CreateOrgSlot onClick={() => setShowModal(true)} disabled={!canCreateMore} />
             </div>
           )}
-        </div>
-
-        {/* Placeholder: stats */}
-        <div style={{ marginBottom: '2.5rem' }}>
-          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', color: '#777', letterSpacing: '0.07em', textTransform: 'uppercase', margin: '0 0 1rem' }}>
-            Activity
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
-            {[
-              { label: 'Active agents', value: '—', note: 'None running' },
-              { label: 'Completed runs', value: '—', note: 'No history yet' },
-              { label: 'Saved workflows', value: '—', note: 'None created' },
-            ].map((card) => (
-              <div key={card.label} style={{ background: '#fff', border: '1px solid #e3e1dc', borderRadius: 6, padding: '1.25rem 1.5rem' }}>
-                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.68rem', color: '#777', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 0.5rem' }}>
-                  {card.label}
-                </p>
-                <p style={{ fontSize: '1.4rem', fontWeight: 500, letterSpacing: '-0.02em', color: '#111', margin: '0 0 0.2rem' }}>
-                  {card.value}
-                </p>
-                <p style={{ fontSize: '0.75rem', color: '#aaa', margin: 0 }}>{card.note}</p>
-              </div>
-            ))}
-          </div>
         </div>
 
       </main>
