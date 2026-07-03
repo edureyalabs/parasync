@@ -1,3 +1,4 @@
+// console/_components/ContextPanel.tsx
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';

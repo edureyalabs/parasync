@@ -1,3 +1,4 @@
+// console/page.tsx
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -6,6 +7,7 @@ import { getSession, signOut } from '@/lib/api';
 import { createClient } from '@/lib/supabase/client';
 
 import ContextPanel from './_components/ContextPanel';
+import ToolsPanel from './_components/ToolsPanel';
 import UnderConstruction from './_components/UnderConstruction';
 
 // ─── Nav ──────────────────────────────────────────────────────────────────────
@@ -128,6 +130,8 @@ export default function ConsolePage() {
     switch (activeItem) {
       case 'context':
         return <ContextPanel orgId={orgId} userId={user?.id ?? ''} />;
+      case 'tools':
+        return <ToolsPanel orgId={orgId} userId={user?.id ?? ''} />;
       default:
         return <UnderConstruction label={NAV_ITEMS.find(i => i.id === activeItem)?.label ?? activeItem} />;
     }
