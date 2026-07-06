@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 
 import ContextPanel from './_components/ContextPanel';
 import ToolsPanel from './_components/ToolsPanel';
+import AgentsPanel from './_components/AgentsPanel';
 import UnderConstruction from './_components/UnderConstruction';
 
 // ─── Nav ──────────────────────────────────────────────────────────────────────
@@ -126,12 +127,21 @@ export default function ConsolePage() {
     </div>
   );
 
+  // Don't render until orgId is loaded — prevents fetch with empty string
+  if (!orgId) return (
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fafaf8' }}>
+      <Spinner />
+    </div>
+  );
+
   const renderPanel = () => {
     switch (activeItem) {
       case 'context':
         return <ContextPanel orgId={orgId} userId={user?.id ?? ''} />;
       case 'tools':
         return <ToolsPanel orgId={orgId} userId={user?.id ?? ''} />;
+      case 'agents':
+        return <AgentsPanel orgId={orgId} userId={user?.id ?? ''} />;
       default:
         return <UnderConstruction label={NAV_ITEMS.find(i => i.id === activeItem)?.label ?? activeItem} />;
     }
