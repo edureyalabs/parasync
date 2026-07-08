@@ -93,32 +93,32 @@ export default function ToolRegistryPanel({ agentId }: Props) {
   const [toggling, setToggling]     = useState<string | null>(null);
 
   useEffect(() => {
-  Promise.all([
-    fetch(`${BACKEND}/agents/platform-tools`).then(r => r.json()),
-    fetch(`${BACKEND}/agents/${agentId}/platform-tools`).then(r => r.json()),
-  ]).then(([allTools, enabledKeys]) => {
-    setTools(Array.isArray(allTools) ? allTools : []);
-    setEnabled(new Set(Array.isArray(enabledKeys) ? enabledKeys : []));
-    setLoading(false);
-  }).catch(() => setLoading(false));
-}, [agentId]);
+    Promise.all([
+        fetch(`${BACKEND}/agent-config/platform-tools`).then(r => r.json()),
+        fetch(`${BACKEND}/agent-config/${agentId}/platform-tools`).then(r => r.json()),
+    ]).then(([allTools, enabledKeys]) => {
+        setTools(Array.isArray(allTools) ? allTools : []);
+        setEnabled(new Set(Array.isArray(enabledKeys) ? enabledKeys : []));
+        setLoading(false);
+    }).catch(() => setLoading(false));
+    }, [agentId]);
 
   const handleToggle = async (key: string, nextEnabled: boolean) => {
     setToggling(key);
-    const res = await fetch(`${BACKEND}/agents/${agentId}/platform-tools/${key}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ enabled: nextEnabled }),
+    const res = await fetch(`${BACKEND}/agent-config/${agentId}/platform-tools/${key}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: nextEnabled }),
     });
     if (res.ok) {
-      setEnabled(prev => {
+        setEnabled(prev => {
         const next = new Set(prev);
         nextEnabled ? next.add(key) : next.delete(key);
         return next;
-      });
+        });
     }
     setToggling(null);
-  };
+    };
 
   if (loading) return <p style={{ fontSize: '0.825rem', color: '#888' }}>Loading…</p>;
 

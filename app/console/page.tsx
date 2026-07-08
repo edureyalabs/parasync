@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client';
 import ContextPanel from './_components/ContextPanel';
 import ToolsPanel from './_components/ToolsPanel';
 import AgentsPanel from './_components/AgentsPanel';
+import OverviewPanel from './_components/OverviewPanel';
 import UnderConstruction from './_components/UnderConstruction';
 
 // ─── Nav ──────────────────────────────────────────────────────────────────────
@@ -136,6 +137,8 @@ export default function ConsolePage() {
 
   const renderPanel = () => {
     switch (activeItem) {
+      case 'overview':
+        return <OverviewPanel orgId={orgId} />;
       case 'context':
         return <ContextPanel orgId={orgId} userId={user?.id ?? ''} />;
       case 'tools':
