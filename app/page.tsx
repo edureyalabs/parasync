@@ -1,5 +1,6 @@
 // app/page.tsx
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Home() {
   return (
@@ -11,14 +12,13 @@ export default function Home() {
       {/* Header */}
       <header style={{ borderBottom: '1px solid #e8e6e1', background: '#fafaf8' }} className="flex items-center justify-between px-8 h-14 sticky top-0 z-10">
         <div className="flex items-center gap-2.5">
-          <div style={{ width: 28, height: 28, background: '#111', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <rect x="3" y="2" width="2" height="10" fill="white" />
-              <rect x="3" y="2" width="6" height="2" fill="white" />
-              <rect x="3" y="6" width="5" height="2" fill="white" />
-              <rect x="7" y="2" width="2" height="6" fill="white" />
-            </svg>
-          </div>
+          <Image
+            src="/logo.png"
+            alt="Parasync logo"
+            width={28}
+            height={28}
+            style={{ borderRadius: 6 }}
+          />
           <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.85rem', color: '#111', letterSpacing: '-0.01em' }}>
             parasync
           </span>
