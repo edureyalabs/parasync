@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client';
 import { Agent, Task, Run } from './types';
 import RunViewer from './RunViewer';
 import EnvironmentPanel from './EnvironmentPanel';
+import AgentSecretsPanel from './AgentSecretsPanel';
+import ToolRegistryPanel from './ToolRegistryPanel';
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8000';
 
@@ -21,6 +23,8 @@ const labelStyle: React.CSSProperties = {
 };
 
 const mono: React.CSSProperties = { fontFamily: "'DM Mono', monospace" };
+
+type Tab = 'tasks' | 'environment' | 'secrets' | 'registry';
 
 function StatusDot({ status }: { status: Run['status'] }) {
   const colors: Record<string, string> = {
@@ -60,9 +64,7 @@ function TaskDetail({ task, onClose, onUpdated }: {
       <style>{`.td-input:focus { border-color: #111 !important; } .td-input::placeholder { color: #999; }`}</style>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
         <div>
-          <p style={{ ...mono, fontSize: '0.65rem', color: '#777', letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 0.25rem' }}>
-            Task detail
-          </p>
+          <p style={{ ...mono, fontSize: '0.65rem', color: '#777', letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 0.25rem' }}>Task detail</p>
           {!editing && <h2 style={{ fontSize: '1rem', fontWeight: 500, color: '#111', margin: 0, letterSpacing: '-0.01em' }}>{task.name}</h2>}
         </div>
         <div style={{ display: 'flex', gap: '0.4rem' }}>
@@ -175,7 +177,6 @@ function TaskCard({ task, orgId, onViewRun, onDelete, onUpdated }: {
         <TaskDetail task={task} onClose={() => setShowDetail(false)}
           onUpdated={t => { onUpdated(t); setShowDetail(false); }} />
       )}
-
       <div style={{ background: '#fff', border: '1px solid #e3e1dc', borderRadius: 6, overflow: 'hidden' }}>
         <div style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -184,20 +185,17 @@ function TaskCard({ task, orgId, onViewRun, onDelete, onUpdated }: {
               {task.instruction}
             </p>
           </div>
-
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             <button onClick={() => setShowDetail(v => !v)}
               style={{ background: 'none', border: '1px solid #ddd', color: '#555', padding: '0.3rem 0.65rem', fontSize: '0.72rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', borderRadius: 4 }}>
               {showDetail ? 'Hide' : 'View'}
             </button>
-
             {latestRun && (
               <button onClick={() => onViewRun(latestRun.id, task.id)}
                 style={{ background: 'none', border: '1px solid #ddd', color: '#555', padding: '0.3rem 0.65rem', fontSize: '0.72rem', ...mono, cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 <StatusDot status={latestRun.status} /> Last run
               </button>
             )}
-
             <button onClick={handleRun} disabled={triggering}
               style={{ background: '#111', color: '#fafaf8', border: 'none', padding: '0.35rem 0.85rem', fontSize: '0.78rem', fontFamily: "'DM Sans', sans-serif", cursor: triggering ? 'not-allowed' : 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               {triggering
@@ -206,7 +204,6 @@ function TaskCard({ task, orgId, onViewRun, onDelete, onUpdated }: {
               }
               {triggering ? 'Starting…' : 'Run'}
             </button>
-
             {!confirm ? (
               <button onClick={() => setConfirm(true)}
                 style={{ background: 'none', border: '1px solid #ddd', color: '#888', padding: '0.3rem 0.6rem', fontSize: '0.72rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', borderRadius: 4 }}
@@ -221,7 +218,6 @@ function TaskCard({ task, orgId, onViewRun, onDelete, onUpdated }: {
                 <button onClick={() => setConfirm(false)} style={{ background: 'none', border: '1px solid #ddd', color: '#555', padding: '0.3rem 0.6rem', fontSize: '0.72rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', borderRadius: 4 }}>No</button>
               </>
             )}
-
             <button onClick={() => setExpanded(e => !e)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', padding: '0.3rem' }}>
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
                 <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
@@ -232,9 +228,7 @@ function TaskCard({ task, orgId, onViewRun, onDelete, onUpdated }: {
 
         {expanded && runs.length > 0 && (
           <div style={{ borderTop: '1px solid #f0eeea', padding: '0.75rem 1.25rem' }}>
-            <p style={{ ...mono, fontSize: '0.62rem', color: '#aaa', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 0.6rem' }}>
-              Run history
-            </p>
+            <p style={{ ...mono, fontSize: '0.62rem', color: '#aaa', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 0.6rem' }}>Run history</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
               {runs.slice(0, 8).map(run => (
                 <div key={run.id} onClick={() => onViewRun(run.id, task.id)}
@@ -329,8 +323,25 @@ export default function TaskPanel({ agent, orgId, userId, onBack }: Props) {
   const [tasks, setTasks]         = useState<Task[]>([]);
   const [loading, setLoading]     = useState(true);
   const [showForm, setShowForm]   = useState(false);
-  const [activeTab, setActiveTab] = useState<'tasks' | 'environment'>('tasks');
+  const [activeTab, setActiveTab] = useState<Tab>('tasks');
   const [viewRun, setViewRun]     = useState<{ runId: string; taskId: string } | null>(null);
+
+  const TABS: { id: Tab; label: string }[] = [
+    { id: 'tasks',       label: 'Tasks' },
+    { id: 'registry',    label: 'Tool Registry' },
+    { id: 'secrets',     label: 'Secrets' },
+    { id: 'environment', label: 'Environment' },
+  ];
+
+  const TAB_STYLE = (active: boolean): React.CSSProperties => ({
+    background: 'none', border: 'none',
+    borderBottom: `2px solid ${active ? '#111' : 'transparent'}`,
+    color: active ? '#111' : '#888',
+    padding: '0.55rem 0.85rem', fontSize: '0.82rem',
+    fontFamily: "'DM Sans', sans-serif",
+    cursor: 'pointer', transition: 'color 0.12s, border-color 0.12s',
+    whiteSpace: 'nowrap',
+  });
 
   useEffect(() => {
     const supabase = createClient();
@@ -338,29 +349,15 @@ export default function TaskPanel({ agent, orgId, userId, onBack }: Props) {
       .then(({ data }) => { setTasks((data as Task[]) ?? []); setLoading(false); });
   }, [agent.id]);
 
-  const TAB_STYLE = (active: boolean): React.CSSProperties => ({
-    background: 'none', border: 'none',
-    borderBottom: `2px solid ${active ? '#111' : 'transparent'}`,
-    color: active ? '#111' : '#888',
-    padding: '0.55rem 0.85rem',
-    fontSize: '0.82rem', fontFamily: "'DM Sans', sans-serif",
-    cursor: 'pointer', transition: 'color 0.12s, border-color 0.12s',
-  });
-
   if (viewRun) {
-    return (
-      <RunViewer
-        runId={viewRun.runId}
-        taskId={viewRun.taskId}
-        onClose={() => setViewRun(null)}
-      />
-    );
+    return <RunViewer runId={viewRun.runId} taskId={viewRun.taskId} onClose={() => setViewRun(null)} />;
   }
 
   return (
     <div style={{ padding: '2.5rem 2rem', width: '100%' }}>
       <style>{`@keyframes agent-spin { to { transform: rotate(360deg); } }`}</style>
 
+      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem' }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666', padding: '2px', display: 'flex', alignItems: 'center' }}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -368,7 +365,7 @@ export default function TaskPanel({ agent, orgId, userId, onBack }: Props) {
           </svg>
         </button>
         <div style={{ flex: 1 }}>
-          <p style={{ ...mono, fontSize: '0.68rem', color: '#777', letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 0.2rem' }}>
+          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.68rem', color: '#777', letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 0.2rem' }}>
             console · agents
           </p>
           <h1 style={{ fontSize: '1.2rem', fontWeight: 500, letterSpacing: '-0.025em', color: '#111', margin: 0 }}>
@@ -393,14 +390,18 @@ export default function TaskPanel({ agent, orgId, userId, onBack }: Props) {
       )}
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e3e1dc', margin: '1rem 0 1.75rem' }}>
-        <button style={TAB_STYLE(activeTab === 'tasks')} onClick={() => setActiveTab('tasks')}>Tasks</button>
-        <button style={TAB_STYLE(activeTab === 'environment')} onClick={() => setActiveTab('environment')}>Environment</button>
+      <div style={{ display: 'flex', borderBottom: '1px solid #e3e1dc', margin: '1rem 0 1.75rem', overflowX: 'auto' }}>
+        {TABS.map(t => (
+          <button key={t.id} style={TAB_STYLE(activeTab === t.id)} onClick={() => setActiveTab(t.id)}>
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      {activeTab === 'environment' && (
-        <EnvironmentPanel agentId={agent.id} orgId={orgId} />
-      )}
+      {/* Tab content */}
+      {activeTab === 'environment' && <EnvironmentPanel agentId={agent.id} orgId={orgId} />}
+      {activeTab === 'secrets'     && <AgentSecretsPanel agentId={agent.id} orgId={orgId} />}
+      {activeTab === 'registry'    && <ToolRegistryPanel agentId={agent.id} />}
 
       {activeTab === 'tasks' && (
         <div>
@@ -409,7 +410,6 @@ export default function TaskPanel({ agent, orgId, userId, onBack }: Props) {
               onCreated={t => { setTasks(prev => [...prev, t]); setShowForm(false); }}
               onCancel={() => setShowForm(false)} />
           )}
-
           {loading ? (
             <p style={{ fontSize: '0.825rem', color: '#888' }}>Loading tasks…</p>
           ) : tasks.length === 0 && !showForm ? (

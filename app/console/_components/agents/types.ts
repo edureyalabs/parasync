@@ -31,7 +31,6 @@ export interface RunStep {
   traceback?: string;
   status?: string;
   timestamp: string;
-  // sandbox_output specific
   stdout?: string;
   stderr?: string;
   exit_code?: number;
@@ -78,12 +77,15 @@ export interface TaskFile {
   created_at: string;
 }
 
-export interface ExecutionLog {
+export interface AgentSecret {
   id: string;
-  run_id: string;
-  stdout: string | null;
-  stderr: string | null;
-  exit_code: number | null;
-  duration_ms: number | null;
+  key_name: string;
   created_at: string;
+}
+
+export interface PlatformTool {
+  key: string;
+  name: string;
+  description: string;
+  is_active: boolean;
 }
