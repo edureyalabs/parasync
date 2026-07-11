@@ -54,6 +54,16 @@ function ToolToggleCard({
             Agent secrets are injected as env vars. Add them in the Secrets tab.
           </p>
         )}
+        {tool.key === 'web_search' && (
+        <p style={{ ...mono, fontSize: '0.68rem', color: '#888', margin: '0.5rem 0 0' }}>
+            Searches the web via Brave Search API. Returns titles, URLs and descriptions.
+        </p>
+        )}
+        {tool.key === 'browse_web' && (
+        <p style={{ ...mono, fontSize: '0.68rem', color: '#888', margin: '0.5rem 0 0' }}>
+            Runs a full browser session. Slower than web search but can access any page including JS-rendered and Cloudflare-protected sites.
+        </p>
+        )}
       </div>
 
       {/* Toggle */}

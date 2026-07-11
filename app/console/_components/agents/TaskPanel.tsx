@@ -7,6 +7,7 @@ import RunViewer from './RunViewer';
 import EnvironmentPanel from './EnvironmentPanel';
 import AgentSecretsPanel from './AgentSecretsPanel';
 import ToolRegistryPanel from './ToolRegistryPanel';
+import ChatPanel from './ChatPanel';
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8000';
 
@@ -24,7 +25,7 @@ const labelStyle: React.CSSProperties = {
 
 const mono: React.CSSProperties = { fontFamily: "'DM Mono', monospace" };
 
-type Tab = 'tasks' | 'environment' | 'secrets' | 'registry';
+type Tab = 'chat' | 'tasks' | 'environment' | 'secrets' | 'registry';
 
 function StatusDot({ status }: { status: Run['status'] }) {
   const colors: Record<string, string> = {
@@ -323,10 +324,11 @@ export default function TaskPanel({ agent, orgId, userId, onBack }: Props) {
   const [tasks, setTasks]         = useState<Task[]>([]);
   const [loading, setLoading]     = useState(true);
   const [showForm, setShowForm]   = useState(false);
-  const [activeTab, setActiveTab] = useState<Tab>('tasks');
+  const [activeTab, setActiveTab] = useState<Tab>('chat');
   const [viewRun, setViewRun]     = useState<{ runId: string; taskId: string } | null>(null);
 
   const TABS: { id: Tab; label: string }[] = [
+    { id: 'chat',        label: 'Chat' },
     { id: 'tasks',       label: 'Tasks' },
     { id: 'registry',    label: 'Tool Registry' },
     { id: 'secrets',     label: 'Secrets' },
@@ -353,12 +355,23 @@ export default function TaskPanel({ agent, orgId, userId, onBack }: Props) {
     return <RunViewer runId={viewRun.runId} taskId={viewRun.taskId} onClose={() => setViewRun(null)} />;
   }
 
+  const isChatTab = activeTab === 'chat';
+
   return (
-    <div style={{ padding: '2.5rem 2rem', width: '100%' }}>
+    <div style={{
+      width: '100%',
+      display: 'flex', flexDirection: 'column',
+      height: isChatTab ? '100%' : 'auto',
+      padding: isChatTab ? 0 : '2.5rem 2rem',
+    }}>
       <style>{`@keyframes agent-spin { to { transform: rotate(360deg); } }`}</style>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem' }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '0.75rem',
+        marginBottom: '0.4rem',
+        padding: isChatTab ? '1.25rem 1.5rem 0' : 0,
+      }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666', padding: '2px', display: 'flex', alignItems: 'center' }}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -383,14 +396,19 @@ export default function TaskPanel({ agent, orgId, userId, onBack }: Props) {
         )}
       </div>
 
-      {agent.description && (
+      {agent.description && !isChatTab && (
         <p style={{ fontSize: '0.82rem', color: '#666', margin: '0 0 1rem 2.25rem', lineHeight: 1.5 }}>
           {agent.description}
         </p>
       )}
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e3e1dc', margin: '1rem 0 1.75rem', overflowX: 'auto' }}>
+      <div style={{
+        display: 'flex', borderBottom: '1px solid #e3e1dc',
+        margin: isChatTab ? '1rem 0 0' : '1rem 0 1.75rem',
+        overflowX: 'auto', flexShrink: 0,
+        padding: isChatTab ? '0 1.5rem' : 0,
+      }}>
         {TABS.map(t => (
           <button key={t.id} style={TAB_STYLE(activeTab === t.id)} onClick={() => setActiveTab(t.id)}>
             {t.label}
@@ -398,37 +416,48 @@ export default function TaskPanel({ agent, orgId, userId, onBack }: Props) {
         ))}
       </div>
 
-      {/* Tab content */}
-      {activeTab === 'environment' && <EnvironmentPanel agentId={agent.id} orgId={orgId} />}
-      {activeTab === 'secrets'     && <AgentSecretsPanel agentId={agent.id} orgId={orgId} />}
-      {activeTab === 'registry'    && <ToolRegistryPanel agentId={agent.id} />}
+      {/* Chat tab — full height, no extra padding */}
+      {activeTab === 'chat' && (
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          <ChatPanel agentId={agent.id} orgId={orgId} agentName={agent.name} />
+        </div>
+      )}
 
-      {activeTab === 'tasks' && (
-        <div>
-          {showForm && (
-            <CreateTaskForm agent={agent} orgId={orgId} userId={userId}
-              onCreated={t => { setTasks(prev => [...prev, t]); setShowForm(false); }}
-              onCancel={() => setShowForm(false)} />
-          )}
-          {loading ? (
-            <p style={{ fontSize: '0.825rem', color: '#888' }}>Loading tasks…</p>
-          ) : tasks.length === 0 && !showForm ? (
-            <div style={{ border: '1.5px dashed #ddd', borderRadius: 6, padding: '2rem' }}>
-              <p style={{ ...mono, fontSize: '0.72rem', color: '#aaa', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 0.4rem' }}>No tasks yet</p>
-              <p style={{ fontSize: '0.825rem', color: '#777', margin: '0 0 1.1rem', lineHeight: 1.6 }}>Create a task with an instruction for this agent to run.</p>
-              <button onClick={() => setShowForm(true)} style={{ background: '#111', color: '#fafaf8', border: 'none', padding: '0.5rem 1.1rem', fontSize: '0.8rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', borderRadius: 4 }}>
-                Add task
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {tasks.map(t => (
-                <TaskCard key={t.id} task={t} orgId={orgId}
-                  onViewRun={(runId, taskId) => setViewRun({ runId, taskId })}
-                  onDelete={id => setTasks(prev => prev.filter(x => x.id !== id))}
-                  onUpdated={updated => setTasks(prev => prev.map(x => x.id === updated.id ? updated : x))}
-                />
-              ))}
+      {/* Other tabs — padded content */}
+      {activeTab !== 'chat' && (
+        <div style={{ padding: isChatTab ? '0 1.5rem' : 0 }}>
+          {activeTab === 'environment' && <EnvironmentPanel agentId={agent.id} orgId={orgId} />}
+          {activeTab === 'secrets'     && <AgentSecretsPanel agentId={agent.id} orgId={orgId} />}
+          {activeTab === 'registry'    && <ToolRegistryPanel agentId={agent.id} />}
+
+          {activeTab === 'tasks' && (
+            <div>
+              {showForm && (
+                <CreateTaskForm agent={agent} orgId={orgId} userId={userId}
+                  onCreated={t => { setTasks(prev => [...prev, t]); setShowForm(false); }}
+                  onCancel={() => setShowForm(false)} />
+              )}
+              {loading ? (
+                <p style={{ fontSize: '0.825rem', color: '#888' }}>Loading tasks…</p>
+              ) : tasks.length === 0 && !showForm ? (
+                <div style={{ border: '1.5px dashed #ddd', borderRadius: 6, padding: '2rem' }}>
+                  <p style={{ ...mono, fontSize: '0.72rem', color: '#aaa', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 0.4rem' }}>No tasks yet</p>
+                  <p style={{ fontSize: '0.825rem', color: '#777', margin: '0 0 1.1rem', lineHeight: 1.6 }}>Create a task with an instruction for this agent to run.</p>
+                  <button onClick={() => setShowForm(true)} style={{ background: '#111', color: '#fafaf8', border: 'none', padding: '0.5rem 1.1rem', fontSize: '0.8rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', borderRadius: 4 }}>
+                    Add task
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {tasks.map(t => (
+                    <TaskCard key={t.id} task={t} orgId={orgId}
+                      onViewRun={(runId, taskId) => setViewRun({ runId, taskId })}
+                      onDelete={id => setTasks(prev => prev.filter(x => x.id !== id))}
+                      onUpdated={updated => setTasks(prev => prev.map(x => x.id === updated.id ? updated : x))}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

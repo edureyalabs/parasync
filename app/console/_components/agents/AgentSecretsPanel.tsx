@@ -37,7 +37,7 @@ export default function AgentSecretsPanel({ agentId, orgId }: Props) {
   const normalizeKey = (v: string) => v.toUpperCase().replace(/[^A-Z0-9_]/g, '_');
 
   const fetchSecrets = async () => {
-    const res = await fetch(`${BACKEND}/agents/${agentId}/secrets`);
+    const res = await fetch(`${BACKEND}/agent-config/${agentId}/secrets`);
     if (res.ok) setSecrets(await res.json());
     setLoading(false);
   };
@@ -56,7 +56,7 @@ export default function AgentSecretsPanel({ agentId, orgId }: Props) {
     if (secrets.some(s => s.key_name === k)) { setError(`"${k}" already exists. Delete it first.`); return; }
 
     setSaving(true); setError('');
-    const res = await fetch(`${BACKEND}/agents/${agentId}/secrets`, {
+    const res = await fetch(`${BACKEND}/agent-config/${agentId}/secrets`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ key_name: k, secret_value: v, org_id: orgId }),
@@ -70,7 +70,7 @@ export default function AgentSecretsPanel({ agentId, orgId }: Props) {
 
   const handleDelete = async (key: string) => {
     setDeletingKey(key);
-    await fetch(`${BACKEND}/agents/${agentId}/secrets/${key}`, { method: 'DELETE' });
+    await fetch(`${BACKEND}/agent-config/${agentId}/secrets/${key}`, { method: 'DELETE' });
     setSecrets(prev => prev.filter(s => s.key_name !== key));
     setDeletingKey(null); setConfirmKey(null);
   };
