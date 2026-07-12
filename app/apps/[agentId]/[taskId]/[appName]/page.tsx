@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8000';
 const mono: React.CSSProperties = { fontFamily: "'DM Mono', monospace" };
 
 export default function AppPage() {
@@ -30,7 +29,6 @@ export default function AppPage() {
     });
   }, [router]);
 
-  // Inject token into iframe via postMessage after load
   const handleIframeLoad = () => {
     if (!token || !iframeRef.current?.contentWindow) return;
     iframeRef.current.contentWindow.postMessage(
@@ -55,12 +53,11 @@ export default function AppPage() {
 
   if (!token) return null;
 
-  // Use the Next.js proxy route — handles auth server-side, no CORS issues
+  // Use Next.js proxy route — handles auth server-side, no CORS/401 issues
   const iframeSrc = `/api/app/${agentId}/${taskId}/${appName}`;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#fafaf8' }}>
-      {/* Top bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.6rem 1.25rem', borderBottom: '1px solid #e3e1dc', background: '#fff', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <button onClick={() => router.back()} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666', display: 'flex', alignItems: 'center' }}>
@@ -86,7 +83,6 @@ export default function AppPage() {
         </div>
       </div>
 
-      {/* Iframe using Next.js proxy — auth handled server-side */}
       <iframe
         ref={iframeRef}
         src={iframeSrc}
