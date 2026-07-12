@@ -68,7 +68,7 @@ function AppsPanel({ agentId, tasks }: { agentId: string; tasks: Task[] }) {
 
     Promise.all(
       tasks.map(task =>
-        fetch(`${BACKEND}/app/${agentId}/${task.id}/apps`, {
+        fetch(`${BACKEND}/app/${agentId}/${task.id}/_apps`, {
           headers: { Authorization: `Bearer ${token}` },
         })
           .then(r => r.ok ? r.json() : { apps: [] })
