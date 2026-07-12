@@ -6,7 +6,7 @@ const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8000';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { agentId: string; taskId: string; appName: string } }
+  { params }: { params: Promise<{ agentId: string; taskId: string; appName: string }> }
 ) {
   const supabase = await createSupabaseServerClient();
   const { data: { session } } = await supabase.auth.getSession();
@@ -15,7 +15,7 @@ export async function GET(
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  const { agentId, taskId, appName } = params;
+  const { agentId, taskId, appName } = await params;
   const backendUrl = `${BACKEND}/app/${agentId}/${taskId}/${appName}`;
 
   try {
