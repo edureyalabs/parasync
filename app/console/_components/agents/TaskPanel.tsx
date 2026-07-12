@@ -40,25 +40,36 @@ function StatusDot({ status }: { status: Run['status'] }) {
 // ─── Apps panel ───────────────────────────────────────────────────────────────
 interface AppEntry {
   name: string;
-  description?: string;
   taskId: string;
   taskName: string;
 }
 
 function AppsPanel({ agentId, tasks }: { agentId: string; tasks: Task[] }) {
   const router = useRouter();
-  const [apps, setApps]       = useState<AppEntry[]>([]);
+  const [apps,    setApps]    = useState<AppEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied]   = useState<string | null>(null);
+  const [token,   setToken]   = useState('');
+  const [copied,  setCopied]  = useState<string | null>(null);
 
+  // Get auth token first
   useEffect(() => {
-    if (tasks.length === 0) { setLoading(false); return; }
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data }) => {
+      setToken(data.session?.access_token ?? '');
+    });
+  }, []);
 
-    // Fetch apps from all tasks in parallel
+  // Fetch apps once token is ready
+  useEffect(() => {
+    if (!token || tasks.length === 0) {
+      if (tasks.length === 0) setLoading(false);
+      return;
+    }
+
     Promise.all(
       tasks.map(task =>
         fetch(`${BACKEND}/app/${agentId}/${task.id}/apps`, {
-          headers: { Authorization: `Bearer ` },
+          headers: { Authorization: `Bearer ${token}` },
         })
           .then(r => r.ok ? r.json() : { apps: [] })
           .then(data => (data.apps as string[]).map(name => ({
@@ -72,17 +83,13 @@ function AppsPanel({ agentId, tasks }: { agentId: string; tasks: Task[] }) {
       setApps(results.flat());
       setLoading(false);
     });
-  }, [agentId, tasks]);
+  }, [token, agentId, tasks]);
 
   const copyLink = (taskId: string, appName: string) => {
     const url = `${window.location.origin}/apps/${agentId}/${taskId}/${appName}`;
     navigator.clipboard.writeText(url);
     setCopied(`${taskId}/${appName}`);
     setTimeout(() => setCopied(null), 2000);
-  };
-
-  const openApp = (taskId: string, appName: string) => {
-    router.push(`/apps/${agentId}/${taskId}/${appName}`);
   };
 
   if (loading) return <p style={{ fontSize: '0.825rem', color: '#888' }}>Loading apps…</p>;
@@ -97,7 +104,7 @@ function AppsPanel({ agentId, tasks }: { agentId: string; tasks: Task[] }) {
           </svg>
         </div>
         <p style={{ ...mono, fontSize: '0.72rem', color: '#aaa', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 0.4rem' }}>No apps yet</p>
-        <p style={{ fontSize: '0.825rem', color: '#777', margin: 0, lineHeight: 1.6, maxWidth: 320, marginLeft: 'auto', marginRight: 'auto' }}>
+        <p style={{ fontSize: '0.825rem', color: '#777', margin: '0 auto', lineHeight: 1.6, maxWidth: 320 }}>
           Ask the agent to build an app. It will write HTML, Python scripts, and data files to the workspace.
         </p>
         <p style={{ ...mono, fontSize: '0.68rem', color: '#bbb', margin: '0.75rem 0 0' }}>
@@ -113,9 +120,8 @@ function AppsPanel({ agentId, tasks }: { agentId: string; tasks: Task[] }) {
         Apps built by this agent. Each app is auth-gated and runs inside the platform.
       </p>
       {apps.map(app => {
-        const key       = `${app.taskId}/${app.name}`;
-        const appUrl    = `/apps/${agentId}/${app.taskId}/${app.name}`;
-        const isCopied  = copied === key;
+        const key      = `${app.taskId}/${app.name}`;
+        const isCopied = copied === key;
 
         return (
           <div key={key} style={{
@@ -125,7 +131,6 @@ function AppsPanel({ agentId, tasks }: { agentId: string; tasks: Task[] }) {
           }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem' }}>
-                {/* App icon */}
                 <div style={{ width: 28, height: 28, borderRadius: 6, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                     <rect x="1" y="1" width="11" height="11" rx="1.5" stroke="white" strokeWidth="1.2" />
@@ -134,57 +139,42 @@ function AppsPanel({ agentId, tasks }: { agentId: string; tasks: Task[] }) {
                 </div>
                 <div>
                   <span style={{ ...mono, fontSize: '0.82rem', fontWeight: 500, color: '#111' }}>{app.name}</span>
-                  <span style={{ ...mono, fontSize: '0.6rem', color: '#888', background: '#f0eeea', padding: '0.1rem 0.4rem', borderRadius: 3, marginLeft: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    app
-                  </span>
+                  <span style={{ ...mono, fontSize: '0.6rem', color: '#888', background: '#f0eeea', padding: '0.1rem 0.4rem', borderRadius: 3, marginLeft: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>app</span>
                 </div>
               </div>
-              <p style={{ ...mono, fontSize: '0.68rem', color: '#aaa', margin: 0 }}>
+              <p style={{ ...mono, fontSize: '0.68rem', color: '#aaa', margin: '0 0 0.25rem' }}>
                 from task: {app.taskName}
               </p>
-              {/* URL preview */}
-              <p style={{ ...mono, fontSize: '0.65rem', color: '#bbb', margin: '0.3rem 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {typeof window !== 'undefined' ? window.location.origin : ''}{appUrl}
+              <p style={{ ...mono, fontSize: '0.65rem', color: '#bbb', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {typeof window !== 'undefined' ? window.location.origin : ''}/apps/{agentId}/{app.taskId}/{app.name}
               </p>
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
-              {/* Copy link */}
               <button
                 onClick={() => copyLink(app.taskId, app.name)}
                 style={{
-                  ...mono, fontSize: '0.7rem',
-                  padding: '0.35rem 0.75rem',
+                  ...mono, fontSize: '0.7rem', padding: '0.35rem 0.75rem',
                   border: '1px solid #ddd', borderRadius: 4,
                   background: isCopied ? '#f0faf6' : 'none',
                   color: isCopied ? '#1a7f5a' : '#555',
-                  cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: '0.35rem',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem',
                   transition: 'all 0.15s',
                 }}
               >
                 {isCopied ? (
-                  <>
-                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                    Copied
-                  </>
+                  <><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>Copied</>
                 ) : (
-                  <>
-                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="1" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.2" /><path d="M3 3V2a1 1 0 011-1h5a1 1 0 011 1v5a1 1 0 01-1 1H8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" /></svg>
-                    Copy link
-                  </>
+                  <><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="1" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.2" /><path d="M3 3V2a1 1 0 011-1h5a1 1 0 011 1v5a1 1 0 01-1 1H8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" /></svg>Copy link</>
                 )}
               </button>
 
-              {/* View app */}
               <button
-                onClick={() => openApp(app.taskId, app.name)}
+                onClick={() => router.push(`/apps/${agentId}/${app.taskId}/${app.name}`)}
                 style={{
-                  background: '#111', color: '#fafaf8',
-                  border: 'none', borderRadius: 4,
+                  background: '#111', color: '#fafaf8', border: 'none', borderRadius: 4,
                   padding: '0.35rem 0.85rem', fontSize: '0.78rem',
-                  fontFamily: "'DM Sans', sans-serif",
-                  cursor: 'pointer',
+                  fontFamily: "'DM Sans', sans-serif", cursor: 'pointer',
                   display: 'flex', alignItems: 'center', gap: '0.35rem',
                 }}
               >
@@ -236,13 +226,10 @@ function TaskDetail({ task, onClose, onUpdated }: {
           {!editing && <h2 style={{ fontSize: '1rem', fontWeight: 500, color: '#111', margin: 0 }}>{task.name}</h2>}
         </div>
         <div style={{ display: 'flex', gap: '0.4rem' }}>
-          {!editing && (
-            <button onClick={() => setEditing(true)} style={{ background: 'none', border: '1px solid #ddd', color: '#444', padding: '0.3rem 0.7rem', fontSize: '0.75rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', borderRadius: 4 }}>Edit</button>
-          )}
+          {!editing && <button onClick={() => setEditing(true)} style={{ background: 'none', border: '1px solid #ddd', color: '#444', padding: '0.3rem 0.7rem', fontSize: '0.75rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', borderRadius: 4 }}>Edit</button>}
           <button onClick={onClose} style={{ background: 'none', border: '1px solid #ddd', color: '#666', padding: '0.3rem 0.7rem', fontSize: '0.75rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', borderRadius: 4 }}>Close</button>
         </div>
       </div>
-
       {editing ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
@@ -359,7 +346,6 @@ function TaskCard({ task, orgId, onViewRun, onDelete, onUpdated }: {
             </button>
           </div>
         </div>
-
         {expanded && runs.length > 0 && (
           <div style={{ borderTop: '1px solid #f0eeea', padding: '0.75rem 1.25rem' }}>
             <p style={{ ...mono, fontSize: '0.62rem', color: '#aaa', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 0.6rem' }}>Run history</p>
