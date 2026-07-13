@@ -60,10 +60,11 @@ function AppsPanel({ agentId, tasks }: { agentId: string; tasks: Task[] }) {
   }, []);
 
   useEffect(() => {
-    if (!token || tasks.length === 0) {
-      if (tasks.length === 0) setLoading(false);
+    if (tasks.length === 0) {
+      setLoading(false);
       return;
     }
+    if (!token) return; // wait for token — will re-run when token arrives
 
     Promise.all(
       tasks.map(task =>
