@@ -9,6 +9,7 @@ import EnvironmentPanel from './EnvironmentPanel';
 import AgentSecretsPanel from './AgentSecretsPanel';
 import ToolRegistryPanel from './ToolRegistryPanel';
 import ChatPanel from './ChatPanel';
+import TaskFilesPanel from './TaskFilesPanel';
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8000';
 
@@ -26,9 +27,9 @@ const labelStyle: React.CSSProperties = {
 
 const mono: React.CSSProperties = { fontFamily: "'DM Mono', monospace" };
 
-type Tab = 'chat' | 'tasks' | 'apps' | 'environment' | 'secrets' | 'registry';
+type Tab = 'chat' | 'tasks' | 'apps' | 'files' | 'environment' | 'secrets' | 'registry';
 
-// ─── Status dot ───────────────────────────────────────────────────────────────
+// ── Status dot ────────────────────────────────────────────────────────────────
 function StatusDot({ status }: { status: Run['status'] }) {
   const colors: Record<string, string> = {
     queued: '#aaa', running: '#f59e0b', completed: '#1a7f5a',
@@ -37,7 +38,7 @@ function StatusDot({ status }: { status: Run['status'] }) {
   return <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: colors[status] ?? '#aaa', flexShrink: 0 }} />;
 }
 
-// ─── Apps panel ───────────────────────────────────────────────────────────────
+// ── Apps panel ────────────────────────────────────────────────────────────────
 interface AppEntry {
   name: string;
   taskId: string;
@@ -51,7 +52,6 @@ function AppsPanel({ agentId, tasks }: { agentId: string; tasks: Task[] }) {
   const [token,   setToken]   = useState('');
   const [copied,  setCopied]  = useState<string | null>(null);
 
-  // Get auth token first
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getSession().then(({ data }) => {
@@ -59,7 +59,6 @@ function AppsPanel({ agentId, tasks }: { agentId: string; tasks: Task[] }) {
     });
   }, []);
 
-  // Fetch apps once token is ready
   useEffect(() => {
     if (!token || tasks.length === 0) {
       if (tasks.length === 0) setLoading(false);
@@ -193,7 +192,7 @@ function AppsPanel({ agentId, tasks }: { agentId: string; tasks: Task[] }) {
   );
 }
 
-// ─── Task detail ──────────────────────────────────────────────────────────────
+// ── Task detail ───────────────────────────────────────────────────────────────
 function TaskDetail({ task, onClose, onUpdated }: {
   task: Task; onClose: () => void; onUpdated: (t: Task) => void;
 }) {
@@ -258,12 +257,14 @@ function TaskDetail({ task, onClose, onUpdated }: {
   );
 }
 
-// ─── Task card ────────────────────────────────────────────────────────────────
-function TaskCard({ task, orgId, onViewRun, onDelete, onUpdated }: {
+// ── Task card ─────────────────────────────────────────────────────────────────
+function TaskCard({ task, orgId, onViewRun, onDelete, onUpdated, onSelect, isSelected }: {
   task: Task; orgId: string;
   onViewRun: (runId: string, taskId: string) => void;
   onDelete: (id: string) => void;
   onUpdated: (t: Task) => void;
+  onSelect: (taskId: string) => void;
+  isSelected: boolean;
 }) {
   const [runs, setRuns]             = useState<Run[]>([]);
   const [triggering, setTriggering] = useState(false);
@@ -309,37 +310,61 @@ function TaskCard({ task, orgId, onViewRun, onDelete, onUpdated }: {
   return (
     <>
       {showDetail && <TaskDetail task={task} onClose={() => setShowDetail(false)} onUpdated={t => { onUpdated(t); setShowDetail(false); }} />}
-      <div style={{ background: '#fff', border: '1px solid #e3e1dc', borderRadius: 6, overflow: 'hidden' }}>
+      <div
+        style={{
+          background: '#fff',
+          border: `1px solid ${isSelected ? '#111' : '#e3e1dc'}`,
+          borderRadius: 6, overflow: 'hidden',
+          transition: 'border-color 0.15s',
+        }}
+        onClick={() => onSelect(task.id)}
+      >
         <div style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#111', margin: '0 0 0.25rem' }}>{task.name}</p>
             <p style={{ fontSize: '0.78rem', color: '#666', margin: 0, lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 340 }}>{task.instruction}</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            <button onClick={() => setShowDetail(v => !v)} style={{ background: 'none', border: '1px solid #ddd', color: '#555', padding: '0.3rem 0.65rem', fontSize: '0.72rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', borderRadius: 4 }}>{showDetail ? 'Hide' : 'View'}</button>
+            <button
+              onClick={e => { e.stopPropagation(); setShowDetail(v => !v); }}
+              style={{ background: 'none', border: '1px solid #ddd', color: '#555', padding: '0.3rem 0.65rem', fontSize: '0.72rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', borderRadius: 4 }}
+            >{showDetail ? 'Hide' : 'View'}</button>
             {latestRun && (
-              <button onClick={() => onViewRun(latestRun.id, task.id)} style={{ background: 'none', border: '1px solid #ddd', color: '#555', padding: '0.3rem 0.65rem', fontSize: '0.72rem', ...mono, cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <button
+                onClick={e => { e.stopPropagation(); onViewRun(latestRun.id, task.id); }}
+                style={{ background: 'none', border: '1px solid #ddd', color: '#555', padding: '0.3rem 0.65rem', fontSize: '0.72rem', ...mono, cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+              >
                 <StatusDot status={latestRun.status} /> Last run
               </button>
             )}
-            <button onClick={handleRun} disabled={triggering} style={{ background: '#111', color: '#fafaf8', border: 'none', padding: '0.35rem 0.85rem', fontSize: '0.78rem', fontFamily: "'DM Sans', sans-serif", cursor: triggering ? 'not-allowed' : 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              {triggering ? <div style={{ width: 11, height: 11, border: '1.5px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'agent-spin 0.8s linear infinite' }} /> : <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 1.5l6 3.5-6 3.5V1.5z" fill="currentColor" /></svg>}
+            <button
+              onClick={e => { e.stopPropagation(); handleRun(); }}
+              disabled={triggering}
+              style={{ background: '#111', color: '#fafaf8', border: 'none', padding: '0.35rem 0.85rem', fontSize: '0.78rem', fontFamily: "'DM Sans', sans-serif", cursor: triggering ? 'not-allowed' : 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              {triggering
+                ? <div style={{ width: 11, height: 11, border: '1.5px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'agent-spin 0.8s linear infinite' }} />
+                : <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 1.5l6 3.5-6 3.5V1.5z" fill="currentColor" /></svg>}
               {triggering ? 'Starting…' : 'Run'}
             </button>
             {!confirm ? (
-              <button onClick={() => setConfirm(true)} style={{ background: 'none', border: '1px solid #ddd', color: '#888', padding: '0.3rem 0.6rem', fontSize: '0.72rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', borderRadius: 4 }}
+              <button
+                onClick={e => { e.stopPropagation(); setConfirm(true); }}
+                style={{ background: 'none', border: '1px solid #ddd', color: '#888', padding: '0.3rem 0.6rem', fontSize: '0.72rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', borderRadius: 4 }}
                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#e55'; (e.currentTarget as HTMLButtonElement).style.color = '#c0392b'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#ddd'; (e.currentTarget as HTMLButtonElement).style.color = '#888'; }}>
-                Delete
-              </button>
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#ddd'; (e.currentTarget as HTMLButtonElement).style.color = '#888'; }}
+              >Delete</button>
             ) : (
               <>
                 <span style={{ fontSize: '0.72rem', color: '#888', ...mono }}>Sure?</span>
-                <button onClick={handleDelete} style={{ background: '#c0392b', border: 'none', color: '#fff', padding: '0.3rem 0.6rem', fontSize: '0.72rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', borderRadius: 4 }}>Yes</button>
-                <button onClick={() => setConfirm(false)} style={{ background: 'none', border: '1px solid #ddd', color: '#555', padding: '0.3rem 0.6rem', fontSize: '0.72rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', borderRadius: 4 }}>No</button>
+                <button onClick={e => { e.stopPropagation(); handleDelete(); }} style={{ background: '#c0392b', border: 'none', color: '#fff', padding: '0.3rem 0.6rem', fontSize: '0.72rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', borderRadius: 4 }}>Yes</button>
+                <button onClick={e => { e.stopPropagation(); setConfirm(false); }} style={{ background: 'none', border: '1px solid #ddd', color: '#555', padding: '0.3rem 0.6rem', fontSize: '0.72rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', borderRadius: 4 }}>No</button>
               </>
             )}
-            <button onClick={() => setExpanded(e => !e)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', padding: '0.3rem' }}>
+            <button
+              onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', padding: '0.3rem' }}
+            >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
                 <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -351,10 +376,12 @@ function TaskCard({ task, orgId, onViewRun, onDelete, onUpdated }: {
             <p style={{ ...mono, fontSize: '0.62rem', color: '#aaa', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 0.6rem' }}>Run history</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
               {runs.slice(0, 8).map(run => (
-                <div key={run.id} onClick={() => onViewRun(run.id, task.id)}
+                <div key={run.id}
+                  onClick={e => { e.stopPropagation(); onViewRun(run.id, task.id); }}
                   style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.4rem 0.6rem', borderRadius: 4, cursor: 'pointer', transition: 'background 0.1s' }}
                   onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#f5f4f1'}
-                  onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}>
+                  onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
+                >
                   <StatusDot status={run.status} />
                   <span style={{ ...mono, fontSize: '0.65rem', color: '#555', flex: 1 }}>{new Date(run.created_at).toLocaleString()}</span>
                   <span style={{ ...mono, fontSize: '0.62rem', color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{run.status}</span>
@@ -368,7 +395,7 @@ function TaskCard({ task, orgId, onViewRun, onDelete, onUpdated }: {
   );
 }
 
-// ─── Create task form ─────────────────────────────────────────────────────────
+// ── Create task form ──────────────────────────────────────────────────────────
 function CreateTaskForm({ agent, orgId, userId, onCreated, onCancel }: {
   agent: Agent; orgId: string; userId: string;
   onCreated: (t: Task) => void; onCancel: () => void;
@@ -421,7 +448,7 @@ function CreateTaskForm({ agent, orgId, userId, onCreated, onCancel }: {
   );
 }
 
-// ─── Main TaskPanel ───────────────────────────────────────────────────────────
+// ── Main TaskPanel ────────────────────────────────────────────────────────────
 interface Props {
   agent: Agent;
   orgId: string;
@@ -430,16 +457,18 @@ interface Props {
 }
 
 export default function TaskPanel({ agent, orgId, userId, onBack }: Props) {
-  const [tasks, setTasks]         = useState<Task[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [showForm, setShowForm]   = useState(false);
-  const [activeTab, setActiveTab] = useState<Tab>('chat');
-  const [viewRun, setViewRun]     = useState<{ runId: string; taskId: string } | null>(null);
+  const [tasks, setTasks]               = useState<Task[]>([]);
+  const [loading, setLoading]           = useState(true);
+  const [showForm, setShowForm]         = useState(false);
+  const [activeTab, setActiveTab]       = useState<Tab>('chat');
+  const [viewRun, setViewRun]           = useState<{ runId: string; taskId: string } | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const TABS: { id: Tab; label: string }[] = [
     { id: 'chat',        label: 'Chat' },
     { id: 'tasks',       label: 'Tasks' },
     { id: 'apps',        label: 'Apps' },
+    { id: 'files',       label: 'Files' },
     { id: 'registry',    label: 'Tool Registry' },
     { id: 'secrets',     label: 'Secrets' },
     { id: 'environment', label: 'Environment' },
@@ -458,7 +487,13 @@ export default function TaskPanel({ agent, orgId, userId, onBack }: Props) {
   useEffect(() => {
     const supabase = createClient();
     supabase.from('tasks').select('*').eq('agent_id', agent.id).order('created_at', { ascending: true })
-      .then(({ data }) => { setTasks((data as Task[]) ?? []); setLoading(false); });
+      .then(({ data }) => {
+        const loaded = (data as Task[]) ?? [];
+        setTasks(loaded);
+        // Default selected task = most recent
+        if (loaded.length > 0) setSelectedTaskId(loaded[loaded.length - 1].id);
+        setLoading(false);
+      });
   }, [agent.id]);
 
   if (viewRun) {
@@ -521,12 +556,28 @@ export default function TaskPanel({ agent, orgId, userId, onBack }: Props) {
           {activeTab === 'registry'    && <ToolRegistryPanel agentId={agent.id} />}
           {activeTab === 'apps'        && <AppsPanel agentId={agent.id} tasks={tasks} />}
 
+          {activeTab === 'files' && (
+            selectedTaskId
+              ? <TaskFilesPanel taskId={selectedTaskId} />
+              : <div style={{ border: '1.5px dashed #ddd', borderRadius: 6, padding: '2rem', textAlign: 'center' }}>
+                  <p style={{ ...mono, fontSize: '0.72rem', color: '#aaa', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 0.4rem' }}>No task selected</p>
+                  <p style={{ fontSize: '0.825rem', color: '#777', margin: 0, lineHeight: 1.6 }}>
+                    Go to the Tasks tab and click a task to select it, then come back here to view its files.
+                  </p>
+                </div>
+          )}
+
           {activeTab === 'tasks' && (
             <div>
               {showForm && (
                 <CreateTaskForm agent={agent} orgId={orgId} userId={userId}
-                  onCreated={t => { setTasks(prev => [...prev, t]); setShowForm(false); }}
-                  onCancel={() => setShowForm(false)} />
+                  onCreated={t => {
+                    setTasks(prev => [...prev, t]);
+                    setSelectedTaskId(t.id);
+                    setShowForm(false);
+                  }}
+                  onCancel={() => setShowForm(false)}
+                />
               )}
               {loading ? (
                 <p style={{ fontSize: '0.825rem', color: '#888' }}>Loading tasks…</p>
@@ -539,9 +590,21 @@ export default function TaskPanel({ agent, orgId, userId, onBack }: Props) {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {tasks.map(t => (
-                    <TaskCard key={t.id} task={t} orgId={orgId}
-                      onViewRun={(runId, taskId) => setViewRun({ runId, taskId })}
-                      onDelete={id => setTasks(prev => prev.filter(x => x.id !== id))}
+                    <TaskCard
+                      key={t.id} task={t} orgId={orgId}
+                      isSelected={selectedTaskId === t.id}
+                      onSelect={taskId => setSelectedTaskId(taskId)}
+                      onViewRun={(runId, taskId) => {
+                        setSelectedTaskId(taskId);
+                        setViewRun({ runId, taskId });
+                      }}
+                      onDelete={id => {
+                        setTasks(prev => prev.filter(x => x.id !== id));
+                        if (selectedTaskId === id) {
+                          const remaining = tasks.filter(x => x.id !== id);
+                          setSelectedTaskId(remaining.length > 0 ? remaining[remaining.length - 1].id : null);
+                        }
+                      }}
                       onUpdated={updated => setTasks(prev => prev.map(x => x.id === updated.id ? updated : x))}
                     />
                   ))}
